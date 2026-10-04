@@ -46,7 +46,7 @@ extern int test_failed;
         }                                                                                       \
     } while (0)
 
-/* Fresh emulator with zeroed registers and memory; freed by run_tests(). */
+/* Fresh emulator from emu_create(); freed by run_tests(). */
 Emulator *emu_new(void);
 
 /* Word access to emulated memory. */

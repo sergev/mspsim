@@ -24,39 +24,46 @@
 
 #include "emulator.h"
 
-/* r2 or SR, the status register */
-typedef struct Status_reg {
-    uint8_t reserved : 7; // Reserved bits
-    uint8_t overflow : 1; // Overflow flag
-    uint8_t SCG1 : 1;     // System Clock Generator SMCLK; ON = 0; OFF = 1;
-    uint8_t SCG0 : 1;     // System Clock Generator DCOCLK DCO ON = 0; DCO OFF = 1;
-    uint8_t OSCOFF : 1;   // Oscillator Off. LFXT1CLK ON = 0; LFXT1CLK OFF = 1;
-    uint8_t CPUOFF : 1;   // CPU off; CPU OFF = 1; CPU ON = 0;
-    uint8_t GIE : 1;      // General Inter enabl; Enbl maskable ints = 1; 0 = dont
-    uint8_t negative : 1; // Negative flag
-    uint8_t zero : 1;     // Zero flag
-    uint8_t carry : 1;    // Carry flag; Set when result produces a carry
-} Status_reg;
+/* SR (R2) bits */
+enum {
+    SR_C      = 0x0001, /* carry */
+    SR_Z      = 0x0002, /* zero */
+    SR_N      = 0x0004, /* negative */
+    SR_GIE    = 0x0008, /* maskable interrupts enabled */
+    SR_CPUOFF = 0x0010,
+    SR_OSCOFF = 0x0020,
+    SR_SCG0   = 0x0040,
+    SR_SCG1   = 0x0080,
+    SR_V      = 0x0100, /* overflow */
+};
 
-// Main CPU structure //
 typedef struct Cpu {
     bool running; /* CPU running or not */
 
-    uint16_t pc, sp; /* R0 and R1 respectively */
-    Status_reg sr;   /* Status register fields */
-    int16_t cg2;     /* R3 or Constant Generator #2 */
-
-    int16_t r4, r5, r6, r7; /* R4-R15 General Purpose Registers */
-    int16_t r8, r9, r10, r11;
-    int16_t r12, r13, r14, r15;
+    union {
+        uint16_t r[16]; /* R0-R15 */
+        struct {
+            uint16_t pc, sp, sr, cg2;
+            uint16_t r4, r5, r6, r7;
+            uint16_t r8, r9, r10, r11;
+            uint16_t r12, r13, r14, r15;
+        };
+    };
 
     uint16_t irq_pending; /* bit N: request for vector at 0xFFE0 + 2*N */
     uint64_t cycles;      /* CPU cycles since reset */
 } Cpu;
 
-uint16_t sr_to_value(Emulator *emu);
-void set_sr_value(Emulator *emu, uint16_t value);
-void initialize_msp_registers(Emulator *emu);
+static inline void set_flag(Cpu *cpu, uint16_t mask, bool on)
+{
+    if (on)
+        cpu->sr |= mask;
+    else
+        cpu->sr &= ~mask;
+}
+
+/* Register-mode write: byte writes clear the high byte; R3 discards writes. */
+void reg_write(Cpu *cpu, unsigned reg, uint16_t val, bool byte);
 
 void cpu_step(Emulator *emu);
 void cpu_reset(Emulator *emu);

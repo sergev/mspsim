@@ -14,7 +14,7 @@ You need CMake 3.16 or newer and a C11 compiler (gcc or clang). The top-level Ma
 |---|---|
 | `make` | Configure `build/` (RelWithDebInfo) on first use, then build everything |
 | `make test` | Build, then run the unit tests with ctest |
-| `make install` | Install `msp430-sim` into `~/.local/bin`, or into `/usr/local/bin` if `~/.local` doesn't exist |
+| `make install` | Install `mspsim` into `~/.local/bin`, or into `/usr/local/bin` if `~/.local` doesn't exist |
 | `make debug` | Reconfigure `build/` for a Debug build; follow with `make` |
 | `make format` | Reformat all C sources with clang-format (uses `.clang-format`) |
 | `make clean` | Remove `build/` |
@@ -30,7 +30,7 @@ ctest --test-dir build
 ## Run
 
 ```bash
-./build/msp430-sim firmware.bin [max_steps]
+./build/mspsim firmware.bin [max_steps]
 ```
 
 The firmware is a raw binary image loaded at 0xC000.

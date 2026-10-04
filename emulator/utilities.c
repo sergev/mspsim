@@ -23,10 +23,7 @@
 #include <string.h>
 #include <strings.h>
 
-#include "cpu/registers.h"
 #include "io.h"
-
-extern uint8_t *MEMSPACE;
 
 /**
  * @brief This function loads firmware from a binary file on disk into the
@@ -57,7 +54,7 @@ int load_firmware(Emulator *emu, char *file_name, uint16_t virt_addr)
     rewind(fd);
 
     // check size
-    if (size > (0x10000 - 0x0C000)) {
+    if (size > 0x10000u - virt_addr) {
         printf("SizeTooBig\n");
         print_console(emu,
                       "Flash Size too small to fit your binary. Quitting, please refresh to try "
@@ -66,9 +63,7 @@ int load_firmware(Emulator *emu, char *file_name, uint16_t virt_addr)
         return 1;
     }
 
-    uint16_t *real_addr = get_addr_ptr(virt_addr);
-
-    result = fread(real_addr, 1, size, fd);
+    result = fread(emu->mem + virt_addr, 1, size, fd);
 
     sprintf(str, "Placed %d bytes into flash\n\n", result);
     printf("%s", str);
@@ -76,81 +71,6 @@ int load_firmware(Emulator *emu, char *file_name, uint16_t virt_addr)
 
     fclose(fd);
     return 0;
-}
-
-uint16_t *get_stack_ptr(Emulator *emu)
-{
-    Cpu *cpu = emu->cpu;
-
-    return (uint16_t *)(MEMSPACE + cpu->sp);
-}
-
-/**
- * @brief Get the host's pointer to the virtual address of the guest
- * @param virt_addr The virtual address of the guest to translate to a useable
- * one in context of the host
- * @return Pointer to the host's location of the guest's memory address
- */
-uint16_t *get_addr_ptr(uint16_t virt_addr)
-{
-    return (uint16_t *)(MEMSPACE + virt_addr);
-}
-
-/**
- * @brief Get a pointer to the register specified by the numeric register value
- * @param cpu A pointer to the CPU structure
- * @param reg The numeric value of the register
- * @return Pointer to the register in question, NULL if register doesn't exist
- */
-int16_t *get_reg_ptr(Emulator *emu, uint8_t reg)
-{
-    Cpu *cpu = emu->cpu;
-
-    static int16_t r2 = 0;
-
-    switch (reg) {
-    case 0x0:
-        return (int16_t *)&cpu->pc;
-    case 0x1:
-        return (int16_t *)&cpu->sp;
-
-    case 0x2: {
-        r2 = sr_to_value(emu);
-        return &r2;
-    }
-
-    case 0x3:
-        return &cpu->cg2;
-    case 0x4:
-        return &cpu->r4;
-    case 0x5:
-        return &cpu->r5;
-    case 0x6:
-        return &cpu->r6;
-    case 0x7:
-        return &cpu->r7;
-    case 0x8:
-        return &cpu->r8;
-    case 0x9:
-        return &cpu->r9;
-    case 0xA:
-        return &cpu->r10;
-    case 0xB:
-        return &cpu->r11;
-    case 0xC:
-        return &cpu->r12;
-    case 0xD:
-        return &cpu->r13;
-    case 0xE:
-        return &cpu->r14;
-    case 0xF:
-        return &cpu->r15;
-
-    default: {
-        puts("Invalid Register Number");
-        return 0;
-    }
-    }
 }
 
 /**

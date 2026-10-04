@@ -13,10 +13,10 @@ TEST(arith_sequence)
 
     CHECK_EQ(cpu->r4, 9);
     CHECK_EQ(cpu->pc, 0xC008);
-    CHECK(cpu->sr.carry); /* no borrow */
-    CHECK(!cpu->sr.zero);
-    CHECK(!cpu->sr.negative);
-    CHECK(!cpu->sr.overflow);
+    CHECK(cpu->sr & SR_C); /* no borrow */
+    CHECK(!(cpu->sr & SR_Z));
+    CHECK(!(cpu->sr & SR_N));
+    CHECK(!(cpu->sr & SR_V));
 }
 
 TEST(jmp_self_loops)
@@ -35,7 +35,7 @@ TEST(reset_state)
 
     CHECK_EQ(cpu->pc, 0xC000);
     CHECK_EQ(cpu->sp, 0x0400);
-    CHECK_EQ(sr_to_value(emu), 0);
+    CHECK_EQ(emu->cpu->sr, 0);
     CHECK_EQ(cpu->cycles, 0);
     CHECK_EQ(cpu->irq_pending, 0);
 }

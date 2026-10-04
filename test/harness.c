@@ -3,9 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "debugger/debugger.h"
 #include "io.h"
-#include "memory/memspace.h"
+#include "memory/memory.h"
 #include "utilities.h"
 
 int test_failed;
@@ -21,35 +20,24 @@ void print_console(Emulator *emu, const char *buf)
 
 Emulator *emu_new(void)
 {
-    Emulator *emu = calloc(1, sizeof(Emulator));
-    emu->cpu      = calloc(1, sizeof(Cpu));
-    emu->debugger = calloc(1, sizeof(Debugger));
-    setup_debugger(emu);
-    initialize_msp_memspace();
-    initialize_msp_registers(emu);
-    current = emu;
-    return emu;
+    current = emu_create();
+    return current;
 }
 
 static void emu_free(void)
 {
-    if (current == NULL)
-        return;
-    uninitialize_msp_memspace();
-    free(current->cpu);
-    free(current->debugger);
-    free(current);
+    emu_destroy(current);
     current = NULL;
 }
 
 void poke(uint16_t addr, uint16_t value)
 {
-    *get_addr_ptr(addr) = value;
+    mem_write(current, addr, value, 2);
 }
 
 uint16_t peek(uint16_t addr)
 {
-    return *get_addr_ptr(addr);
+    return mem_read(current, addr, 2, ACC_DATA);
 }
 
 void poke_words(uint16_t addr, const uint16_t *words, size_t n)

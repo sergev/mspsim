@@ -4,7 +4,7 @@
 #
 # make test    -- build and run the unit tests
 #
-# make install -- install msp430-sim to ~/.local/bin (or /usr/local/bin)
+# make install -- install mspsim to ~/.local/bin (or /usr/local/bin)
 #
 # make format  -- reformat all C sources with clang-format
 #

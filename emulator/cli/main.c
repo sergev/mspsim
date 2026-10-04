@@ -1,7 +1,8 @@
 /*
- * Temporary CLI driver: msp430-sim firmware.bin [max_steps]
+ * Temporary CLI driver: mspsim firmware.bin [max_steps]
  * Replaced by the real front-end in Step 6.
  */
+#include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,8 +11,18 @@
 #include "debugger/debugger.h"
 #include "debugger/register_display.h"
 #include "emulator.h"
-#include "memory/memspace.h"
 #include "utilities.h"
+
+static Emulator *sigint_emu;
+
+static void handle_sigint(int sig)
+{
+    (void)sig;
+    if (sigint_emu == NULL)
+        return;
+    sigint_emu->cpu->running         = false;
+    sigint_emu->debugger->debug_mode = true;
+}
 
 int main(int argc, char *argv[])
 {
@@ -21,30 +32,25 @@ int main(int argc, char *argv[])
     }
     unsigned long long max_steps = (argc > 2) ? strtoull(argv[2], NULL, 0) : 0;
 
-    Emulator *emu = calloc(1, sizeof(Emulator));
-    emu->cpu      = calloc(1, sizeof(Cpu));
-    emu->debugger = calloc(1, sizeof(Debugger));
-    setup_debugger(emu);
-
+    Emulator *emu = emu_create();
     Cpu *cpu      = emu->cpu;
     Debugger *deb = emu->debugger;
 
-    initialize_msp_memspace();
-    initialize_msp_registers(emu);
+    sigint_emu = emu;
+    signal(SIGINT, handle_sigint);
 
     int status = 1;
     if (load_firmware(emu, argv[1], 0xC000) == 0) {
         cpu->running    = true;
         deb->debug_mode = false;
-        for (unsigned long long n = 0; !deb->quit && (max_steps == 0 || n < max_steps); n++)
+        for (unsigned long long n = 0;
+             cpu->running && !deb->quit && (max_steps == 0 || n < max_steps); n++)
             cpu_step(emu);
         display_registers(emu);
         status = 0;
     }
 
-    uninitialize_msp_memspace();
-    free(cpu);
-    free(deb);
-    free(emu);
+    sigint_emu = NULL;
+    emu_destroy(emu);
     return status;
 }

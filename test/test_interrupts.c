@@ -25,7 +25,7 @@ TEST(eint_sets_gie)
     Emulator *emu = setup();
 
     step(emu, 1);
-    CHECK(emu->cpu->sr.GIE);
+    CHECK(emu->cpu->sr & SR_GIE);
     CHECK_EQ(emu->cpu->pc, MAIN + 2);
 }
 
@@ -34,7 +34,7 @@ TEST(entry_pushes_pc_and_sr)
     Emulator *emu = setup();
     Cpu *cpu      = emu->cpu;
 
-    cpu->sr.carry = 1;
+    cpu->sr |= SR_C;
     step(emu, 1); /* eint */
     cpu_set_irq(emu, 2, true);
     step(emu, 1); /* jmp, then accept */
@@ -51,12 +51,12 @@ TEST(entry_clears_sr_except_scg0)
     Cpu *cpu      = emu->cpu;
 
     step(emu, 1);
-    set_sr_value(emu, 0x01CF); /* V SCG1 SCG0 GIE N Z C */
+    cpu->sr = 0x01CF; /* V SCG1 SCG0 GIE N Z C */
     cpu_set_irq(emu, 2, true);
     step(emu, 1);
 
     CHECK_EQ(cpu->pc, ISR);
-    CHECK_EQ(sr_to_value(emu), 0x0040); /* SCG0 only */
+    CHECK_EQ(emu->cpu->sr, 0x0040); /* SCG0 only */
 }
 
 TEST(reti_restores_pc_and_sr)
@@ -64,7 +64,7 @@ TEST(reti_restores_pc_and_sr)
     Emulator *emu = setup();
     Cpu *cpu      = emu->cpu;
 
-    cpu->sr.carry = 1;
+    cpu->sr |= SR_C;
     step(emu, 1);
     cpu_set_irq(emu, 2, true);
     step(emu, 1);
@@ -74,8 +74,8 @@ TEST(reti_restores_pc_and_sr)
     CHECK_EQ(cpu->r4, 0x1234);
     CHECK_EQ(cpu->pc, MAIN + 2);
     CHECK_EQ(cpu->sp, 0x0400);
-    CHECK(cpu->sr.GIE);
-    CHECK(cpu->sr.carry);
+    CHECK(cpu->sr & SR_GIE);
+    CHECK(cpu->sr & SR_C);
 }
 
 TEST(request_held_while_gie_clear)
@@ -89,7 +89,7 @@ TEST(request_held_while_gie_clear)
 
     cpu_set_irq(emu, 3, false);
     step(emu, 2);
-    cpu->sr.GIE = 0;
+    cpu->sr &= ~SR_GIE;
     cpu_set_irq(emu, 3, true);
     step(emu, 3);
     CHECK_EQ(cpu->pc, MAIN + 2); /* still masked */
@@ -162,8 +162,8 @@ TEST(wakeup_from_cpuoff)
     poke(VECTOR_TABLE + 2 * 2, ISR);
 
     step(emu, 1);
-    CHECK(cpu->sr.CPUOFF);
-    CHECK(cpu->sr.GIE);
+    CHECK(cpu->sr & SR_CPUOFF);
+    CHECK(cpu->sr & SR_GIE);
     uint16_t pc = cpu->pc;
     step(emu, 5);
     CHECK_EQ(cpu->pc, pc); /* sleeping */
@@ -171,13 +171,13 @@ TEST(wakeup_from_cpuoff)
     cpu_set_irq(emu, 2, true);
     step(emu, 1);
     CHECK_EQ(cpu->pc, ISR);
-    CHECK(!cpu->sr.CPUOFF);
+    CHECK(!(cpu->sr & SR_CPUOFF));
 
     cpu_set_irq(emu, 2, false);
     step(emu, 2); /* bic, reti */
     CHECK_EQ(cpu->pc, MAIN + 4);
-    CHECK(!cpu->sr.CPUOFF);
-    CHECK(cpu->sr.GIE);
+    CHECK(!(cpu->sr & SR_CPUOFF));
+    CHECK(cpu->sr & SR_GIE);
 }
 
 TEST(cycle_counting)
@@ -191,7 +191,7 @@ TEST(cycle_counting)
     CHECK_EQ(cpu->cycles, 14);
 
     cpu_set_irq(emu, 2, false);
-    cpu->sr.CPUOFF = 1;
+    cpu->sr |= SR_CPUOFF;
     step(emu, 3); /* idle: 1 each */
     CHECK_EQ(cpu->cycles, 17);
 }

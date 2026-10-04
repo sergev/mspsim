@@ -36,8 +36,6 @@ void display_registers(Emulator *emu)
     Cpu *cpu           = emu->cpu;
     Debugger *debugger = emu->debugger;
 
-    uint16_t r2 = sr_to_value(emu);
-
     char full[1000] = { 0 };
 
     char *v_flag, *n_flag, *z_flag, *c_flag;
@@ -116,31 +114,31 @@ void display_registers(Emulator *emu)
             "%s%s%s: %s%d\n\n",
 
             red, r0_name, decor_col, value_col, (uint16_t)cpu->pc, red, r1_name, decor_col,
-            value_col, (uint16_t)cpu->sp, red, r2_name, decor_col, value_col, (uint16_t)r2, red,
-            r3_name, decor_col, value_col, (uint16_t)cpu->cg2,
+            value_col, (uint16_t)cpu->sp, red, r2_name, decor_col, value_col, cpu->sr, red, r3_name,
+            decor_col, value_col, (uint16_t)cpu->cg2,
 
-            cyan, c_flag, decor_col, value_col, cpu->sr.carry,
+            cyan, c_flag, decor_col, value_col, (cpu->sr & SR_C) != 0,
 
             decor_col, reg_col, r4_name, decor_col, value_col, (uint16_t)cpu->r4, decor_col,
             reg_col, r5_name, decor_col, value_col, (uint16_t)cpu->r5, decor_col, reg_col, r6_name,
             decor_col, value_col, (uint16_t)cpu->r6, decor_col, reg_col, r7_name, decor_col,
             value_col, (uint16_t)cpu->r7,
 
-            cyan, z_flag, decor_col, value_col, cpu->sr.zero,
+            cyan, z_flag, decor_col, value_col, (cpu->sr & SR_Z) != 0,
 
             decor_col, reg_col, r8_name, decor_col, value_col, (uint16_t)cpu->r8, decor_col,
             reg_col, r9_name, decor_col, value_col, (uint16_t)cpu->r9, decor_col, reg_col, r10_name,
             decor_col, value_col, (uint16_t)cpu->r10, decor_col, reg_col, r11_name, decor_col,
             value_col, (uint16_t)cpu->r11,
 
-            cyan, n_flag, decor_col, value_col, cpu->sr.negative,
+            cyan, n_flag, decor_col, value_col, (cpu->sr & SR_N) != 0,
 
             decor_col, reg_col, r12_name, decor_col, value_col, (uint16_t)cpu->r12, decor_col,
             reg_col, r13_name, decor_col, value_col, (uint16_t)cpu->r13, decor_col, reg_col,
             r14_name, decor_col, value_col, (uint16_t)cpu->r14, decor_col, reg_col, r15_name,
             decor_col, value_col, (uint16_t)cpu->r15,
 
-            cyan, v_flag, decor_col, value_col, cpu->sr.overflow);
+            cyan, v_flag, decor_col, value_col, (cpu->sr & SR_V) != 0);
 
     printf("%s", full);
     print_console(emu, full);

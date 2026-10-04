@@ -18,7 +18,6 @@
 
 #include "debugger/debugger.h"
 
-#include <signal.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -30,10 +29,8 @@
 #include "debugger/disassembler.h"
 #include "debugger/register_display.h"
 #include "io.h"
+#include "memory/memory.h"
 #include "utilities.h"
-extern uint8_t *MEMSPACE;
-
-Emulator *local_emu = NULL;
 
 bool exec_cmd(Emulator *emu, char *line, int len)
 {
@@ -118,12 +115,13 @@ bool exec_cmd(Emulator *emu, char *line, int len)
         if (str[0] >= '0' && str[0] <= '9') {
             sscanf(str, "%X", (unsigned int *)&start_addr);
         } else if (str[0] == '%' || str[0] == 'r' || str[0] == 'R') {
-            uint16_t *p = (uint16_t *)get_reg_ptr(emu, reg_name_to_num(str));
-            start_addr  = *p;
+            int reg = reg_name_to_num(str);
+            if (reg >= 0)
+                start_addr = cpu->r[reg];
         }
 
         stride = BYTE_STRIDE;
-        dump_memory(emu, MEMSPACE, 0x0, start_addr, stride);
+        dump_memory(emu, start_addr, stride);
     }
 
     // Set REG/LOC VALUE
@@ -144,12 +142,7 @@ bool exec_cmd(Emulator *emu, char *line, int len)
         if (res != -1) { // If its a reg name
             printf("In reg part...\n");
 
-            if (res == 2) { // SR (R2)
-                set_sr_value(emu, value);
-            } else { // All others
-                uint16_t *p = (uint16_t *)get_reg_ptr(emu, res);
-                *p          = value;
-            }
+            cpu->r[res] = value;
 
             display_registers(emu);
             disassemble(emu, cpu->pc, 1);
@@ -159,8 +152,7 @@ bool exec_cmd(Emulator *emu, char *line, int len)
 
             uint16_t virtual_addr = (uint16_t)strtol(addr_str, NULL, 0);
 
-            uint16_t *p = get_addr_ptr(virtual_addr);
-            *p          = value;
+            mem_write(emu, virtual_addr, value, 2);
         }
     }
 
@@ -232,17 +224,20 @@ bool exec_cmd(Emulator *emu, char *line, int len)
 }
 
 // ##########+++ Dump Memory Function +++##########
-void dump_memory(Emulator *emu, uint8_t *MEM, uint32_t size, uint32_t start_addr, uint8_t stride)
+void dump_memory(Emulator *emu, uint16_t start_addr, uint8_t stride)
 {
-    (void)size;
-    uint32_t i, msp_addr = start_addr;
-    MEM += start_addr;
+    uint32_t i, k;
+    uint16_t msp_addr = start_addr;
+    uint8_t MEM[8];
     char str[100] = { 0 };
 
     puts("");
     print_console(emu, "\n");
 
     for (i = 0; i < 32; i += 8) {
+        for (k = 0; k < 8; k++)
+            MEM[k] = emu->mem[(uint16_t)(msp_addr + k)];
+
         sprintf(str, "0x%04X:\t", msp_addr);
 
         printf("%s", str);
@@ -252,21 +247,19 @@ void dump_memory(Emulator *emu, uint8_t *MEM, uint32_t size, uint32_t start_addr
             sprintf(str,
                     "0x%02X  0x%02X  0x%02X  0x%02X  "
                     "0x%02X  0x%02X  0x%02X  0x%02X\n",
-                    *(MEM + 0), *(MEM + 1), *(MEM + 2), *(MEM + 3), *(MEM + 4), *(MEM + 5),
-                    *(MEM + 6), *(MEM + 7));
+                    MEM[0], MEM[1], MEM[2], MEM[3], MEM[4], MEM[5], MEM[6], MEM[7]);
 
             printf("%s", str);
             print_console(emu, str);
         } else if (stride == WORD_STRIDE) {
-            printf("0x%02X%02X  0x%02X%02X  0x%02X%02X  0x%02X%02X\n", *(MEM + 0), *(MEM + 1),
-                   *(MEM + 2), *(MEM + 3), *(MEM + 4), *(MEM + 5), *(MEM + 6), *(MEM + 7));
+            printf("0x%02X%02X  0x%02X%02X  0x%02X%02X  0x%02X%02X\n", MEM[0], MEM[1], MEM[2],
+                   MEM[3], MEM[4], MEM[5], MEM[6], MEM[7]);
         } else if (stride == DWORD_STRIDE) {
-            printf("0x%02X%02X%02X%02X  0x%02X%02X%02X%02X\n", *(MEM + 0), *(MEM + 1), *(MEM + 2),
-                   *(MEM + 3), *(MEM + 4), *(MEM + 5), *(MEM + 6), *(MEM + 7));
+            printf("0x%02X%02X%02X%02X  0x%02X%02X%02X%02X\n", MEM[0], MEM[1], MEM[2], MEM[3],
+                   MEM[4], MEM[5], MEM[6], MEM[7]);
         }
 
-        MEM += 8;      // Increase character by 4
-        msp_addr += 8; // Increase msp_addr by 4
+        msp_addr += 8;
     }
 
     puts("");
@@ -274,7 +267,6 @@ void dump_memory(Emulator *emu, uint8_t *MEM, uint32_t size, uint32_t start_addr
 
 void setup_debugger(Emulator *emu)
 {
-    local_emu     = emu;
     Debugger *deb = emu->debugger;
 
     deb->debug_mode       = true;
@@ -286,21 +278,6 @@ void setup_debugger(Emulator *emu)
     memset(deb->bp_addresses, 0, sizeof(deb->bp_addresses));
     deb->num_bps    = 0;
     deb->current_bp = 0;
-}
-
-void handle_sigint(int sig)
-{
-    (void)sig;
-    if (local_emu == NULL)
-        return;
-
-    local_emu->cpu->running         = false;
-    local_emu->debugger->debug_mode = true;
-}
-
-void register_signal(int sig)
-{
-    signal(sig, handle_sigint);
 }
 
 void handle_breakpoints(Emulator *emu)

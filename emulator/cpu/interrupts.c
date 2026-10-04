@@ -2,10 +2,9 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include <string.h>
 
 #include "cpu/registers.h"
-#include "utilities.h"
+#include "memory/memory.h"
 
 void cpu_set_irq(Emulator *emu, unsigned irq, bool level)
 {
@@ -25,7 +24,7 @@ bool handle_interrupts(Emulator *emu)
     uint16_t pending = cpu->irq_pending;
     int irq;
 
-    if (!cpu->sr.GIE)
+    if (!(cpu->sr & SR_GIE))
         pending &= 1u << NMI_IRQ;
     if (pending == 0)
         return false;
@@ -36,15 +35,13 @@ bool handle_interrupts(Emulator *emu)
         cpu->irq_pending &= ~(1u << NMI_IRQ); /* edge-triggered */
 
     cpu->sp -= 2;
-    *get_stack_ptr(emu) = cpu->pc;
+    mem_write(emu, cpu->sp, cpu->pc, 2);
     cpu->sp -= 2;
-    *get_stack_ptr(emu) = sr_to_value(emu);
+    mem_write(emu, cpu->sp, cpu->sr, 2);
 
-    cpu->pc = *get_addr_ptr(VECTOR_TABLE + 2 * irq);
+    cpu->pc = mem_read(emu, VECTOR_TABLE + 2 * irq, 2, ACC_DATA);
 
     /* SR is cleared except SCG0 (SLAU144, 2.2.3). */
-    uint8_t scg0 = cpu->sr.SCG0;
-    memset(&cpu->sr, 0, sizeof cpu->sr);
-    cpu->sr.SCG0 = scg0;
+    cpu->sr &= SR_SCG0;
     return true;
 }

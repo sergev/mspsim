@@ -20,58 +20,31 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdio.h>
 
 #include "cpu/decoder.h"
 
 /**
  * @brief Test if the result of the asm instruction is zero
- * @param result_addr The address of the operation's result
+ * @param result The operation's result
  * @param bw_flag Byte or Word flag
  * @return true if zero, false otherwise
  */
-uint8_t is_zero(uint16_t *result_addr, uint8_t bw_flag)
+uint8_t is_zero(uint16_t result, uint8_t bw_flag)
 {
-    if (bw_flag == EMU_WORD) {
-        if (*result_addr == 0) {
-            return 1;
-        }
-
-        return 0;
-    } else if (bw_flag == EMU_BYTE) {
-        if (*(int8_t *)result_addr == 0) {
-            return 1;
-        }
-
-        return 0;
-    }
-
-    return false;
+    if (bw_flag == EMU_BYTE)
+        result &= 0xFF;
+    return result == 0;
 }
 
 /**
  * @brief Test if the result of the asm instruction is negative
- * @param result_addr The address of the operation's result
+ * @param result The operation's result
  * @param bw_flag Byte or Word flag
- * @return true if zero, false otherwise
+ * @return true if negative, false otherwise
  */
-uint8_t is_negative(int16_t *result_addr, uint8_t bw_flag)
+uint8_t is_negative(uint16_t result, uint8_t bw_flag)
 {
-    if (bw_flag == EMU_WORD) {
-        if (*result_addr < 0) {
-            return 1;
-        }
-
-        return 0;
-    } else if (bw_flag == EMU_BYTE) {
-        if (*((int8_t *)result_addr) < 0) {
-            return 1;
-        }
-
-        return 0;
-    }
-
-    return false;
+    return (bw_flag == EMU_BYTE) ? (result >> 7) & 1 : result >> 15;
 }
 
 /**
@@ -106,33 +79,15 @@ uint8_t is_carried(uint32_t original_dst_value, uint32_t source_value, uint8_t b
  * @brief Test if the result of the asm instruction is overflowed
  * @param source_value The value at the source operand
  * @param destination_value The value at the destination operand
- * @param result A pointer to the result of the operation
+ * @param result The result of the operation
  * @param bw_flag Byte or Word flag
- * @return true if zero, false otherwise
+ * @return true if overflowed, false otherwise
  */
-uint8_t is_overflowed(uint16_t source_value, uint16_t destination_value, uint16_t *result,
+uint8_t is_overflowed(uint16_t source_value, uint16_t destination_value, uint16_t result,
                       uint8_t bw_flag)
 {
-    if (bw_flag == EMU_WORD) {
-        if ((source_value >> 15) == (destination_value >> 15) &&
-            (*result >> 15) != (destination_value >> 15)) {
-            return 1;
-        }
+    unsigned sign = (bw_flag == EMU_BYTE) ? 7 : 15;
+    unsigned s = (source_value >> sign) & 1, d = (destination_value >> sign) & 1;
 
-        return 0;
-    } else if (bw_flag == EMU_BYTE) {
-        uint8_t dst_prev_value = (uint8_t)destination_value;
-        uint8_t src_value      = (uint8_t)source_value;
-
-        if ((src_value >> 7) == (dst_prev_value >> 7) &&
-            (*(uint8_t *)result >> 7) != (dst_prev_value >> 7)) {
-            return 1;
-        }
-
-        return 0;
-    } else {
-        printf("Error, overflowed function: invalid bw_flag\n");
-    }
-
-    return false;
+    return s == d && ((result >> sign) & 1) != d;
 }

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(msp430-sim C)
+project(mspsim C)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -12,6 +12,7 @@ endif()
 add_compile_options(-Wall -Wextra)
 
 add_library(msp430core STATIC
+    emulator/emulator.c
     emulator/utilities.c
     emulator/cpu/registers.c
     emulator/cpu/decoder.c
@@ -20,19 +21,19 @@ add_library(msp430core STATIC
     emulator/cpu/formatII.c
     emulator/cpu/formatIII.c
     emulator/cpu/interrupts.c
-    emulator/memory/memspace.c
+    emulator/memory/memory.c
     emulator/debugger/debugger.c
     emulator/debugger/disassembler.c
     emulator/debugger/register_display.c
 )
 target_include_directories(msp430core PUBLIC emulator)
 
-add_executable(msp430-sim
+add_executable(mspsim
     emulator/cli/main.c
     emulator/cli/stub_io.c
 )
-target_link_libraries(msp430-sim PRIVATE msp430core)
-install(TARGETS msp430-sim RUNTIME DESTINATION bin)
+target_link_libraries(mspsim PRIVATE msp430core)
+install(TARGETS mspsim RUNTIME DESTINATION bin)
 
 # Every header must compile on its own (and survive double inclusion).
 file(GLOB_RECURSE all_headers CONFIGURE_DEPENDS
