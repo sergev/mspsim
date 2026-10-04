@@ -1,0 +1,77 @@
+
+---
+BasedOnStyle: Google
+
+#
+# Indent by four columns.
+#
+IndentWidth: 4
+
+#
+# Limit source width by 100 columns.
+#
+ColumnLimit: 100
+
+#
+# The brace breaking style:
+# attach braces to surrounding context, but break before functions.
+#
+BreakBeforeBraces: WebKit
+
+#
+# For case labels, use the same indentation level as for the switch statement.
+#
+IndentCaseLabels: false
+
+#
+# Put spaces after { and before } in initializers.
+#
+Cpp11BracedListStyle: false
+
+#
+# For access modifiers (like public:),
+# use the same indentation level as the class statement.
+#
+AccessModifierOffset: -4
+
+#
+# Align pointers to the right, like: int *a;
+#
+DerivePointerAlignment: false
+PointerAlignment: Right
+
+#
+# Short functions, loops or ifs should be split into multiple lines.
+#
+AllowShortFunctionsOnASingleLine: InlineOnly
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+
+#
+# Break inheritance list and constructor initializers before colon.
+#
+BreakInheritanceList: BeforeColon
+BreakConstructorInitializers: BeforeColon
+ConstructorInitializerAllOnOneLineOrOnePerLine: false
+
+#
+# Align trailing comments.
+#
+AlignTrailingComments: true
+SpacesBeforeTrailingComments: 1
+
+#
+# Allow packing of multiple function definition’s parameters per line.
+#
+BinPackParameters: true
+AllowAllParametersOfDeclarationOnNextLine: false
+
+AlignConsecutiveAssignments: true
+AlignConsecutiveMacros: true
+
+#
+# The scalar typedefs of <sys/types.h>.  Without this clang-format cannot tell a cast
+# from a bitwise and, and writes `(caddr_t) & (x)' where the source says `(caddr_t)&(x)'.
+# Requires clang-format 17 or newer.
+#
+TypeNames: [caddr_t, chan_t, carg_t, comp_t, daddr_t, ino_t, label_t, paddr_t]

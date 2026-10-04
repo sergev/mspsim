@@ -1,0 +1,14 @@
+.idea/
+.vscode/
+build/
+build-*/
+
+*.o
+*.a
+*.so
+*.bin
+*.elf
+*.hex
+*.map
+
+.DS_Store
