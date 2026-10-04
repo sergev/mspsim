@@ -59,16 +59,16 @@ static void print_effects(Emulator *emu, bool show_pc)
     for (int i = 0; i < t->count; i++) {
         TraceAccess *a = &t->log[i];
 
-        fprintf(out, "      %-2s [%04x] %s %0*x\n",
-                a->size == 1 ? (a->write ? "Wb" : "Rb") : (a->write ? "W" : "R"), a->addr,
-                a->write ? "<-" : "->", a->size * 2, a->val);
+        fprintf(out, "      %-6s [%04x] = %0*x\n",
+                a->size == 1 ? (a->write ? "Writeb" : "Readb") : (a->write ? "Write" : "Read"),
+                a->addr, a->size * 2, a->val);
     }
     for (int r = show_pc ? 0 : 1; r < 16; r++) {
         uint16_t old = t->regs[r], new = emu->cpu->r[r];
 
         if (old == new)
             continue;
-        fprintf(out, "      %-2s %04x -> %04x", names[r], old, new);
+        fprintf(out, "      %s = %04x", names[r], new);
         if (r == 2) {
             char decoded[64] = "";
 

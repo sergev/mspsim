@@ -83,7 +83,7 @@ check no_args 2 "" $? "$out"
 
 out=$("$MSPSIM" -q -o "$T/trace" "$T/hello.bin")
 status=$?
-head -1 "$T/trace" | grep -q "^c000: 403f c100        mov   #0xc100, r15$" && grep -q "Wb \[0067\] <- 48" "$T/trace"
+head -1 "$T/trace" | grep -q "^c000: 403f c100        mov   #0xc100, r15$" && grep -q "Writeb \[0067\] = 48" "$T/trace"
 check trace_file "0 0" "Hello" "$status $?" "$out"
 
 out=$("$MSPSIM" -q -t "$T/hello.bin" 2>"$T/err")

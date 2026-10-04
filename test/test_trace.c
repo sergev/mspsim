@@ -44,16 +44,16 @@ TEST(loads_stores_and_registers)
     step(emu, 4);
     CHECK_STR(trace_text(emu),
               "c000: 40b2 5a80 0120   mov   #0x5a80, &0x0120\n"
-              "      W  [0120] <- 5a80\n"
+              "      Write  [0120] = 5a80\n"
               "c006: 4031 0300        mov   #0x0300, sp\n"
-              "      SP 0400 -> 0300\n"
+              "      SP = 0300\n"
               "c00a: 5292 0200 0202   add   &0x0200, &0x0202\n"
-              "      R  [0200] -> 0005\n"
-              "      R  [0202] -> 0003\n"
-              "      W  [0202] <- 0008\n"
+              "      Read   [0200] = 0005\n"
+              "      Read   [0202] = 0003\n"
+              "      Write  [0202] = 0008\n"
               "c010: 4fe5 0003        mov.b @r15, 3(r5)\n"
-              "      Rb [1234] -> 41\n"
-              "      Wb [0207] <- 41\n");
+              "      Readb  [1234] = 41\n"
+              "      Writeb [0207] = 41\n");
 }
 
 TEST(flags_decoded)
@@ -65,8 +65,8 @@ TEST(flags_decoded)
     step(emu, 1);
     CHECK_STR(trace_text(emu),
               "c000: 8314             sub   #0x0001, r4\n"
-              "      SR 0000 -> 0004 [N]\n"
-              "      R4 0000 -> ffff\n");
+              "      SR = 0004 [N]\n"
+              "      R4 = ffff\n");
 }
 
 TEST(call_and_ret)
@@ -81,11 +81,11 @@ TEST(call_and_ret)
     step(emu, 2);
     CHECK_STR(trace_text(emu),
               "c000: 12b0 c010        call  #0xc010\n"
-              "      W  [03fa] <- c004\n"
-              "      SP 03fc -> 03fa\n"
+              "      Write  [03fa] = c004\n"
+              "      SP = 03fa\n"
               "c010: 4130             mov   @sp+, pc\n"
-              "      R  [03fa] -> c004\n"
-              "      SP 03fa -> 03fc\n");
+              "      Read   [03fa] = c004\n"
+              "      SP = 03fc\n");
 }
 
 TEST(interrupt_entry)
@@ -102,15 +102,15 @@ TEST(interrupt_entry)
     step(emu, 1);
     CHECK_STR(trace_text(emu),
               "c000: d232             bis   #0x0008, sr\n"
-              "      SR 0000 -> 0008 [GIE]\n"
+              "      SR = 0008 [GIE]\n"
               "c002: 3fff             jmp   0xc002\n"
               "*** interrupt vector 0xffe4\n"
-              "      W  [03fe] <- c002\n"
-              "      W  [03fc] <- 0008\n"
-              "      R  [ffe4] -> c010\n"
-              "      PC c002 -> c010\n"
-              "      SP 0400 -> 03fc\n"
-              "      SR 0008 -> 0000\n");
+              "      Write  [03fe] = c002\n"
+              "      Write  [03fc] = 0008\n"
+              "      Read   [ffe4] = c010\n"
+              "      PC = c010\n"
+              "      SP = 03fc\n"
+              "      SR = 0000\n");
 }
 
 TEST(sleeping_steps_not_traced)

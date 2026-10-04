@@ -63,15 +63,15 @@ The run ends when the program writes to the stop register, hits an illegal instr
 
 ```
 c00a: 5292 0200 0202   add   &0x0200, &0x0202
-      R  [0200] -> 0005
-      R  [0202] -> 0003
-      W  [0202] <- 0008
+      Read   [0200] = 0005
+      Read   [0202] = 0003
+      Write  [0202] = 0008
 c010: 4fe5 0003        mov.b @r15, 3(r5)
-      Rb [1234] -> 41
-      Wb [0207] <- 41
+      Readb  [1234] = 41
+      Writeb [0207] = 41
 c000: 8314             sub   #0x0001, r4
-      SR 0000 -> 0004 [N]
-      R4 0000 -> ffff
+      SR = 0004 [N]
+      R4 = ffff
 ```
 
 Instruction fetches and PC changes are left out. Interrupt entry shows as `*** interrupt vector 0xffee`, followed by the stack pushes, the vector load and the PC, SP and SR changes. In the debugger, `trace on` and `trace off` switch tracing during a session.
