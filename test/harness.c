@@ -39,6 +39,8 @@ int uart_rx(Emulator *emu)
 Emulator *emu_new(void)
 {
     current = emu_create();
+    poke(0xFFFE, 0xC000); /* reset vector */
+    emu_reset(current);
     return current;
 }
 

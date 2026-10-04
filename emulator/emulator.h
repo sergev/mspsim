@@ -9,6 +9,7 @@
 typedef struct Cpu Cpu;
 typedef struct Debugger Debugger;
 typedef struct Trace Trace;
+typedef struct Symbol Symbol;
 
 /* Why the emulator stopped. */
 typedef enum {
@@ -26,6 +27,10 @@ typedef struct Emulator {
     Debugger *debugger;
     uint8_t mem[0x10000]; /* 64 KB address space; the CPU goes through memory/memory.h */
 
+    int entry;       /* start address if the reset vector is erased, or -1 */
+    Symbol *symbols; /* sorted by address; see loader/symbols.h */
+    int nsymbols;
+
     StopReason stop;
     uint16_t exit_code;                  /* value written to the stop register */
     volatile sig_atomic_t break_request; /* set by the front-end, e.g. on SIGINT */
@@ -42,7 +47,8 @@ typedef struct Emulator {
 Emulator *emu_create(void);
 void emu_destroy(Emulator *emu);
 
-/* Reset the CPU and the devices; memory is kept. */
+/* Reset the CPU and the devices; memory is kept. PC comes from the reset
+ * vector at 0xFFFE, or from emu->entry if the vector is erased (0xFFFF). */
 void emu_reset(Emulator *emu);
 
 /*

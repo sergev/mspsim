@@ -34,9 +34,15 @@ typedef struct {
     int nwords;
     char mnemonic[8];
     char ops[48]; /* operand list */
+
+    /* addresses the instruction refers to, for symbol annotation */
+    int ntargets;
+    uint16_t targets[2];
+    bool code[2]; /* jump or call target, rather than data */
 } Listing;
 
 void listing_init(Listing *l, uint16_t addr, uint16_t instruction);
+void listing_target(Listing *l, uint16_t addr, bool code);
 
 /* One line, no newline: "c004: 40b2 5a80 0120   mov   #0x5a80, &0x0120". */
 void format_listing(const Listing *l, char *buf, size_t size);

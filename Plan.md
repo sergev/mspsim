@@ -28,7 +28,7 @@ Python, wxPython, the GUI, the websocket server, the LaunchPad-specific peripher
 
 ## Current state
 
-Steps 1–7 are done; the remaining steps keep their original numbers.
+Steps 1–8 are done; the remaining steps keep their original numbers.
 
 - **Build:** CMake builds the `msp430core` library, vendored linenoise, the `mspsim` front-end (`src/main.c`) and the tests (`test/`, run with `ctest`). It is warning-free under `-Wall -Wextra`. Headers are self-contained; the `header_check` target enforces it.
 - **Removed:** the Python/wxPython GUI, the websocket server, MSVC support, and all peripherals (clock module, Timer_A, Port 1, USCI).
@@ -47,20 +47,13 @@ Steps 1–7 are done; the remaining steps keep their original numbers.
 - **Stop register:** a write to 0x01FE sets `emu->stop = EMU_PROGRAM` and `emu->exit_code`.
 - **Registers:** `cpu->r[16]` with named aliases; SR is a plain `uint16_t` with `SR_*` masks, so its reserved bits survive.
 - **Core state:** the core has no globals. `emu_create()`/`emu_destroy()`/`emu_reset()` manage an emulator; `emu_run()` runs it until a `StopReason`.
-- **Front-end:** `src/main.c`, with `getopt_long` options, batch mode and a linenoise debugger prompt. The exit status reflects the stop reason. Core output goes through `emu_printf()` and the `print_console()` hook: stderr in batch mode, stdout at the prompt. Without `-b`, a raw image is loaded at 0xC000, and ELF/Intel HEX images are rejected until Step 8.
+- **Front-end:** `src/main.c`, with `getopt_long` options, batch mode and a linenoise debugger prompt. The exit status reflects the stop reason. Core output goes through `emu_printf()` and the `print_console()` hook: stderr in batch mode, stdout at the prompt.
 - **Debugger:** `exec_cmd()` in `debugger.c` runs one command and returns stay/run/quit. `dis` and the trace share one listing format.
 - **Tracing:** `-t`, `-o FILE` or `trace on` enable `debugger/trace.c`: each instruction, its data loads/stores and its register changes, plus interrupt entries. When tracing is off the bus pays one branch per access. Golden tests are in `test/test_trace.c`.
-- **Loading:** only raw `.bin` images loaded at 0xC000. `cpu_reset()` hard-codes PC = 0xC000.
+- **Loading:** `loader/loader.c` loads ELF32 (`PT_LOAD` at physical addresses, plus the symbol table) and Intel HEX, detected from the contents; raw binaries need `-b ADDR`. PC comes from the reset vector, or from the loader's entry address when the vector is erased. The debugger accepts symbol names as addresses, and `dis` and the trace annotate targets with symbols.
 - **Known ALU bugs, left for Step 9:** `SUB` never clears C; `ADDC`/`SUBC` compute C without the carry-in; `DADD` is a no-op; V on subtraction is suspect.
 
 ## Remaining steps
-
-### Step 8 — Loaders
-
-1. Add an ELF32 little-endian loader of about 150 lines, without libelf. It loads `PT_LOAD` segments at their physical addresses, and reads the symbol table so the debugger can accept `break main` and the disassembler can show symbol names.
-2. Add an Intel HEX loader.
-3. Raw binary loading uses `-b ADDR`.
-4. After loading, the reset vector at 0xFFFE gives the initial PC. Replace the hard-coded `pc = 0xC000` in `cpu_reset()`.
 
 ### Step 9 — CPU correctness and tests
 
@@ -81,7 +74,7 @@ Steps 1–7 are done; the remaining steps keep their original numbers.
 
 ## Commit order
 
-9 (unit tests, at least the instruction set) → 8 → 10.
+9 (unit tests, at least the instruction set) → 10.
 
 Each step is one or more commits that leave the tree building.
 

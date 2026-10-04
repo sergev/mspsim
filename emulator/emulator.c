@@ -8,6 +8,7 @@
 #include "cpu/registers.h"
 #include "debugger/debugger.h"
 #include "debugger/trace.h"
+#include "loader/symbols.h"
 #include "uart/uart.h"
 
 Emulator *emu_create(void)
@@ -21,6 +22,7 @@ Emulator *emu_create(void)
     /* Info memory and the code area read as erased flash. */
     memset(emu->mem + 0x1000, 0xFF, 0x100);
     memset(emu->mem + 0xC000, 0xFF, 0x4000);
+    emu->entry = -1;
 
     emu_reset(emu);
     return emu;
@@ -41,6 +43,7 @@ void emu_destroy(Emulator *emu)
     free(emu->cpu);
     free(emu->debugger);
     free(emu->tracer);
+    symbols_free(emu);
     free(emu);
 }
 

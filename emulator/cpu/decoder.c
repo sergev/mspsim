@@ -131,6 +131,15 @@ void listing_init(Listing *l, uint16_t addr, uint16_t instruction)
     l->nwords      = 1;
     l->mnemonic[0] = 0;
     l->ops[0]      = 0;
+    l->ntargets    = 0;
+}
+
+void listing_target(Listing *l, uint16_t addr, bool code)
+{
+    if (l->ntargets < 2) {
+        l->targets[l->ntargets] = addr;
+        l->code[l->ntargets++]  = code;
+    }
 }
 
 void format_listing(const Listing *l, char *buf, size_t size)
@@ -205,11 +214,13 @@ void decode_operand(Emulator *emu, Listing *l, Operand *op, uint8_t reg, uint8_t
                  byte ? op->value & 0xFF : op->value);
     else if (mode == 0)
         snprintf(text, sizeof text, "%s", name);
-    else if (mode == 1 && reg == 0)
+    else if (mode == 1 && reg == 0) {
         snprintf(text, sizeof text, "0x%04x", op->addr);
-    else if (mode == 1 && reg == 2)
+        listing_target(l, op->addr, false);
+    } else if (mode == 1 && reg == 2) {
         snprintf(text, sizeof text, "&0x%04x", op->addr);
-    else if (mode == 1)
+        listing_target(l, op->addr, false);
+    } else if (mode == 1)
         snprintf(text, sizeof text, "%d(%s)", offset, name);
     else
         snprintf(text, sizeof text, mode == 2 ? "@%s" : "@%s+", name);

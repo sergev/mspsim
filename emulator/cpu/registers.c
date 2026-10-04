@@ -71,8 +71,10 @@ void cpu_reset(Emulator *emu)
 {
     Cpu *cpu = emu->cpu;
 
+    uint16_t vector = emu->mem[0xFFFE] | emu->mem[0xFFFF] << 8;
+
     memset(cpu->r, 0, sizeof cpu->r);
-    cpu->pc          = 0xC000;
+    cpu->pc          = (vector == 0xFFFF && emu->entry >= 0) ? emu->entry : vector;
     cpu->sp          = 0x400;
     cpu->cycles      = 0;
     cpu->irq_pending = 0;

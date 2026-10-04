@@ -18,46 +18,12 @@
 
 #include "utilities.h"
 
-#include <errno.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
 
 #include "io.h"
-
-/**
- * @brief Load a raw binary image into emulated memory at addr
- * @return The number of bytes loaded, or -1 with errno set
- */
-long load_binary(Emulator *emu, const char *file_name, uint16_t addr)
-{
-    FILE *fd = fopen(file_name, "rb");
-    long size;
-
-    if (fd == NULL)
-        return -1;
-
-    /* obtain file size */
-    if (fseek(fd, 0, SEEK_END) < 0 || (size = ftell(fd)) < 0) {
-        fclose(fd);
-        return -1;
-    }
-    rewind(fd);
-
-    if (size > 0x10000L - addr) {
-        fclose(fd);
-        errno = EFBIG;
-        return -1;
-    }
-    if (fread(emu->mem + addr, 1, size, fd) != (size_t)size) {
-        fclose(fd);
-        errno = EIO;
-        return -1;
-    }
-    fclose(fd);
-    return size;
-}
 
 /**
  * @brief Convert register ASCII name to it's respective numeric value
@@ -140,10 +106,11 @@ static const char *HelpStr =
     "*\t\tmspsim debugger\n*\n"
     "* run, c\t\t[Run Program Until Breakpoint is Hit]\n"
     "* step [N]\t\t[Step Into Instruction]\n"
-    "* dump [HEX_ADDR|Rn]\t[Dump Memory direct or at register value]\n"
-    "* set HEX_ADDR|Rn VAL\t[Set Memory Word or Register]\n"
-    "* dis [N][HEX_ADDR]\t[Disassemble Instructions]\n"
+    "* dump [ADDR|Rn]\t[Dump Memory direct or at register value]\n"
+    "* set ADDR|Rn VAL\t[Set Memory Word or Register]\n"
+    "* dis [N] [ADDR]\t[Disassemble Instructions]\n"
     "* break ADDR\t\t[Set a Breakpoint]\n"
+    "*   ADDR is a symbol name or a hex address\n"
     "* bps\t\t\t[Display Breakpoints]\n"
     "* regs\t\t\t[Display Registers]\n"
     "* trace on|off\t\t[Trace Executed Instructions]\n"

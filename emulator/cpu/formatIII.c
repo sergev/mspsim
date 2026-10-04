@@ -49,6 +49,7 @@ void decode_formatIII(Emulator *emu, uint16_t instruction, Listing *l)
     if (l) {
         snprintf(l->mnemonic, sizeof l->mnemonic, "%s", names[condition]);
         snprintf(l->ops, sizeof l->ops, "0x%04x", (uint16_t)(cpu->pc + signed_offset));
+        listing_target(l, cpu->pc + signed_offset, true);
         return;
     }
 

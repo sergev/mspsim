@@ -30,7 +30,10 @@ make test                               # all tests (ctest), including test/cli_
 
 ## Firmware format
 
-`load_binary()` (`emulator/utilities.c`) loads a **raw binary** image at the `-b` address (default 0xC000); it prints nothing and returns -1 with `errno` set on failure. ELF and Intel HEX are rejected until Plan Step 8. `cpu_reset()` hard-codes PC = 0xC000.
+`emulator/loader/loader.c`: `load_firmware()` detects ELF (`\177ELF`) or Intel HEX (`:`) and calls `load_elf()`/`load_ihex()`; `-b ADDR` calls `load_binary()` instead. They print nothing: they return the byte count, or -1 with a message in the caller's `err` buffer.
+- ELF: 32-bit little-endian, `e_machine` 105; `PT_LOAD` segments go to their physical (LMA) addresses. Symbols (FUNC, NOTYPE and OBJECT, defined, not starting with `.` or `$`) go into `emu->symbols` (`loader/symbols.c`, sorted by address; FUNC is preferred at a shared address).
+- Intel HEX: record types 00–05; data must lie below 64 KB.
+- Start PC: `cpu_reset()` takes PC from the reset vector at 0xFFFE. If that is erased (0xFFFF), it uses `emu->entry`: ELF `e_entry`, the HEX start record, or the `-b` address. The front-end calls `emu_reset()` after loading. The test harness puts 0xC000 in the reset vector.
 
 ## Architecture
 
@@ -52,8 +55,8 @@ make test                               # all tests (ctest), including test/cli_
 
 **Instruction decoding:** `decoder.c` dispatches to `formatI.c` (two-operand), `formatII.c` (single-operand) and `formatIII.c` (jumps). Flags are computed from values in `flag_handler.c`.
 - Operands: `decode_operand()` (`decoder.c`) resolves an addressing mode into an `Operand` (`OPND_REG`, `OPND_MEM` with an address, or `OPND_CONST` for immediates and the constant generators), fetching its extension word and applying `@Rn+`. Instructions then use `operand_read()`/`operand_write()`, so a read-modify-write does one load and one store. Format I reads the source before decoding the destination, as hardware does.
-- `decode(emu, insn, l)` executes when `l` is NULL. Otherwise it disassembles into the `Listing` `l` (words, mnemonic, operand text), with no data accesses and no autoincrement; the execute path builds no text. `disassemble_at()` (`debugger/disassembler.c`) fills a `Listing` for an address, and `format_listing()` renders the one line format used by both `dis` and the trace: `c004: 40b2 5a80 0120   mov   #0x5a80, &0x0120`. Use `str_append()` (`utilities.h`) for text, not `strncat`.
+- `decode(emu, insn, l)` executes when `l` is NULL. Otherwise it disassembles into the `Listing` `l` (words, mnemonic, operand text), with no data accesses and no autoincrement; the execute path builds no text. `disassemble_at()` (`debugger/disassembler.c`) fills a `Listing` for an address, and `format_listing()` renders the one line format used by both `dis` and the trace: `c004: 40b2 5a80 0120   mov   #0x5a80, &0x0120`. `listing_text()` adds symbol annotations: `<sym>`/`<sym+0x6>` for jump, call and `br #` targets (`Listing.targets`), and `<sym>` for symbolic/absolute operands that are exactly a symbol. Use `str_append()` (`utilities.h`) for text, not `strncat`.
 
 **Tracing:** `emu->trace` (`-t`, `-o FILE`, or `trace on`) makes `cpu_step()` call `trace_begin()`/`trace_end()` (`debugger/trace.c`) around each instruction, and `trace_interrupt()` after interrupt entry. While tracing, the bus logs every `ACC_DATA` access through `trace_access()`; fetches are not logged. The output is the listing line, then `Read`/`Write`/`Readb`/`Writeb` accesses in order, then the new values of changed registers (PC only for interrupts; SR decoded). It goes to `emu->trace_file`, or stderr. Golden tests are in `test/test_trace.c`.
 
-**Debugger:** `exec_cmd()` in `debugger/debugger.c` runs one command (step, run/c, dis, dump, set, break, bps, regs, trace, reset, quit, help) and returns `DBG_STAY`, `DBG_RUN` or `DBG_QUIT`; the front-end does the running. `report_stop()` prints why the CPU stopped. The core keeps no global state.
+**Debugger:** `exec_cmd()` in `debugger/debugger.c` runs one command (step, run/c, dis, dump, set, break, bps, regs, trace, reset, quit, help) and returns `DBG_STAY`, `DBG_RUN` or `DBG_QUIT`. Addresses may be symbol names (tried first) or hex; the front-end does the running. `report_stop()` prints why the CPU stopped. The core keeps no global state.

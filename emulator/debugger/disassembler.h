@@ -19,6 +19,7 @@
 #ifndef _DISASSEMBLER_H_
 #define _DISASSEMBLER_H_
 
+#include <stddef.h>
 #include <stdint.h>
 
 #include "cpu/decoder.h"
@@ -27,7 +28,10 @@
 /* Disassemble the instruction at addr into l; returns the address after it. */
 uint16_t disassemble_at(Emulator *emu, uint16_t addr, Listing *l);
 
-/* Print times instructions starting at start_addr. */
+/* The listing line, with jump/call and address targets annotated by symbol. */
+void listing_text(Emulator *emu, const Listing *l, char *buf, size_t size);
+
+/* Print times instructions from start_addr, with a "name:" line at each symbol. */
 void disassemble(Emulator *emu, uint16_t start_addr, uint32_t times);
 
 #endif

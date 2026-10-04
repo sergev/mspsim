@@ -33,7 +33,7 @@ ctest --test-dir build
 
 ```
 mspsim [options] firmware
-  -b, --binary ADDR     raw binary loaded at ADDR (default 0xC000)
+  -b, --binary ADDR     raw binary loaded at ADDR (default: ELF or Intel HEX)
   -g, --debug           start paused in the interactive debugger
   -n, --max-cycles N    stop after N cycles
   -t, --trace           trace executed instructions, register changes, loads/stores
@@ -41,7 +41,7 @@ mspsim [options] firmware
   -q, --quiet           no banner/diagnostics, only UART output
 ```
 
-The firmware is a raw binary image; execution starts at 0xC000. ELF and Intel HEX are not supported yet.
+The firmware is an ELF file (as produced by `msp430-elf-gcc`) or an Intel HEX file; the format is detected from the contents. A raw binary image needs `-b ADDR`. Execution starts at the reset vector (0xFFFE). If the vector is erased (0xFFFF), it starts at the ELF entry point, the HEX start address, or the `-b` address. ELF symbols can be used in debugger commands (`break main`), and the disassembler and trace show them.
 
 UART output goes to stdout and diagnostics to stderr, so `mspsim -q fw.bin > out.txt` captures just what the program prints.
 
@@ -78,6 +78,6 @@ Instruction fetches and PC changes are left out. Interrupt entry shows as `*** i
 
 ### Debugger
 
-`-g`, or Ctrl-] during a run on a terminal, opens the debugger prompt, with line editing and history. Type `help` for the commands: `step [N]`, `run`, `dis [N] [ADDR]`, `dump ADDR|Rn`, `set ADDR|Rn VALUE`, `break ADDR`, `bps`, `regs`, `trace on|off`, `reset` and `quit`. An empty line repeats the last command, and Ctrl-C stops a run.
+`-g`, or Ctrl-] during a run on a terminal, opens the debugger prompt, with line editing and history. Type `help` for the commands: `step [N]`, `run`, `dis [N] [ADDR]`, `dump ADDR|Rn`, `set ADDR|Rn VALUE`, `break ADDR` (ADDR is a symbol or a hex address), `bps`, `regs`, `trace on|off`, `reset` and `quit`. An empty line repeats the last command, and Ctrl-C stops a run.
 
 The console UART uses the USCI_A0 registers of the MSP430G2xx: a byte written to `UCA0TXBUF` (0x0067) goes to stdout, and stdin is read through `UCA0RXBUF` (0x0066), with `IFG2` (0x0003) and `IE2` (0x0001) flags as on the real chip. On a terminal, stdin is raw while the program runs, so keys go straight to the UART.

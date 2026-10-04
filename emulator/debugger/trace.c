@@ -87,9 +87,9 @@ static void print_effects(Emulator *emu, bool show_pc)
 
 void trace_end(Emulator *emu)
 {
-    char line[128];
+    char line[160];
 
-    format_listing(&emu->tracer->listing, line, sizeof line);
+    listing_text(emu, &emu->tracer->listing, line, sizeof line);
     fprintf(trace_out(emu), "%s\n", line);
     print_effects(emu, false);
 }

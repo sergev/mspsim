@@ -29,12 +29,28 @@
 #include "debugger/disassembler.h"
 #include "debugger/register_display.h"
 #include "io.h"
+#include "loader/symbols.h"
 #include "memory/memory.h"
 #include "utilities.h"
 
 static bool is_cmd(const char *cmd, const char *name)
 {
     return strcasecmp(cmd, name) == 0;
+}
+
+/* A symbol name or a hex address. */
+static bool parse_addr(Emulator *emu, const char *s, uint16_t *addr)
+{
+    char *end;
+    unsigned long v;
+
+    if (symbol_lookup(emu, s, addr))
+        return true;
+    v = strtoul(s, &end, 16);
+    if (end == s || *end != 0 || v > 0xFFFF)
+        return false;
+    *addr = v;
+    return true;
 }
 
 /* Registers and the next instruction. */
@@ -116,26 +132,29 @@ DebugAction exec_cmd(Emulator *emu, const char *line)
 
     // Display disassembly of N at HEX_ADDR: dis [N] [HEX_ADDR] //
     else if (is_cmd(cmd, "disas") || is_cmd(cmd, "dis") || is_cmd(cmd, "disassemble")) {
-        unsigned int num = 10, start_addr = cpu->pc;
+        unsigned int num    = 10;
+        uint16_t start_addr = cpu->pc;
+        char where[100]     = "";
 
-        sscanf(line, "%*s %u %X", &num, &start_addr);
+        sscanf(line, "%*s %u %99s", &num, where);
+        if (where[0] && !parse_addr(emu, where, &start_addr)) {
+            emu_printf(emu, "\t[No symbol or address %s]\n", where);
+            return DBG_STAY;
+        }
         disassemble(emu, start_addr, num);
     }
 
     // dump [HEX_ADDR|Rn] //
     else if (is_cmd(cmd, "dump")) {
-        unsigned int start_addr = cpu->pc;
+        uint16_t start_addr = cpu->pc;
+        int reg             = reg_name_to_num(arg);
 
-        // Is it a direct address or an adress in a register being spec'd
-        if (arg[0] >= '0' && arg[0] <= '9') {
-            sscanf(arg, "%X", &start_addr);
-        } else if (arg[0]) {
-            int reg = reg_name_to_num(arg);
-            if (reg < 0) {
-                emu_printf(emu, "\t[No register %s]\n", arg);
-                return DBG_STAY;
-            }
+        // A register holding the address, a symbol or a hex address
+        if (reg >= 0) {
             start_addr = cpu->r[reg];
+        } else if (arg[0] && !parse_addr(emu, arg, &start_addr)) {
+            emu_printf(emu, "\t[No register, symbol or address %s]\n", arg);
+            return DBG_STAY;
         }
         dump_memory(emu, start_addr, BYTE_STRIDE);
     }
@@ -143,9 +162,10 @@ DebugAction exec_cmd(Emulator *emu, const char *line)
     // set [HEX_ADDR|Rn] HEX_VALUE //
     else if (is_cmd(cmd, "set")) {
         unsigned int value = 0;
+        uint16_t addr;
 
         if (sscanf(line, "%*s %*s %X", &value) != 1) {
-            emu_printf(emu, "\t[Usage: set HEX_ADDR|Rn HEX_VALUE]\n");
+            emu_printf(emu, "\t[Usage: set ADDR|Rn HEX_VALUE]\n");
             return DBG_STAY;
         }
 
@@ -155,22 +175,24 @@ DebugAction exec_cmd(Emulator *emu, const char *line)
         if (res != -1) { // If its a reg name
             cpu->r[res] = value;
             show_state(emu);
+        } else if (parse_addr(emu, arg, &addr)) {
+            mem_write(emu, addr, value, 2);
         } else {
-            mem_write(emu, strtol(arg, NULL, 16), value, 2);
+            emu_printf(emu, "\t[No register, symbol or address %s]\n", arg);
         }
     }
 
     // break BREAKPOINT_ADDRESS - set breakpoint //
     else if (is_cmd(cmd, "break") || is_cmd(cmd, "b")) {
-        unsigned int addr;
+        uint16_t addr;
 
         if (deb->num_bps >= MAX_BREAKPOINTS) {
             emu_printf(emu, "Breakpoints are full.\n");
-        } else if (ops == 2 && sscanf(arg, "%X", &addr) == 1) {
+        } else if (ops == 2 && parse_addr(emu, arg, &addr)) {
             deb->bp_addresses[deb->num_bps++] = addr;
-            emu_printf(emu, "\t[Breakpoint [%d] Set]\n", deb->num_bps);
+            emu_printf(emu, "\t[Breakpoint [%d] Set at 0x%04X]\n", deb->num_bps, addr);
         } else {
-            emu_printf(emu, "\t[Usage: break HEX_ADDR]\n");
+            emu_printf(emu, "\t[Usage: break NAME|HEX_ADDR]\n");
         }
     }
 
@@ -178,8 +200,12 @@ DebugAction exec_cmd(Emulator *emu, const char *line)
     else if (is_cmd(cmd, "bps")) {
         if (deb->num_bps == 0)
             emu_printf(emu, "You have not set any breakpoints!\n");
-        for (uint32_t i = 0; i < deb->num_bps; i++)
-            emu_printf(emu, "\t[%d] 0x%04X\n", i + 1, deb->bp_addresses[i]);
+        for (uint32_t i = 0; i < deb->num_bps; i++) {
+            const Symbol *s = symbol_at(emu, deb->bp_addresses[i]);
+
+            emu_printf(emu, "\t[%d] 0x%04X%s%s\n", i + 1, deb->bp_addresses[i], s ? " " : "",
+                       s ? s->name : "");
+        }
     }
 
     // Display registers //

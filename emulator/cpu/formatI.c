@@ -65,6 +65,8 @@ void decode_formatI(Emulator *emu, uint16_t instruction, Listing *l)
 
     if (l) {
         snprintf(l->mnemonic, sizeof l->mnemonic, "%s%s", names[opcode - 4], byte ? ".b" : "");
+        if (opcode == 0x4 && src.kind == OPND_CONST && dst.kind == OPND_REG && dst.reg == 0)
+            listing_target(l, src.value, true); /* br #addr */
         return;
     }
 

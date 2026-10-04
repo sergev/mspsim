@@ -61,9 +61,12 @@ void decode_formatII(Emulator *emu, uint16_t instruction, Listing *l)
     } else {
         decode_operand(emu, l, &op, source, as_flag, byte, true);
         /* SWPB, SXT and CALL have no byte form */
-        if (l)
+        if (l) {
             snprintf(l->mnemonic, sizeof l->mnemonic, "%s%s", names[opcode],
                      (byte && !(opcode & 1)) ? ".b" : "");
+            if (opcode == 5 && op.kind == OPND_CONST)
+                listing_target(l, op.value, true); /* call #addr */
+        }
     }
     if (l)
         return;

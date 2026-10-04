@@ -21,10 +21,10 @@
 #include "emulator.h"
 #include "io.h"
 #include "linenoise.h"
+#include "loader/loader.h"
 #include "utilities.h"
 
 #define CTRL_RBRACKET 0x1D /* returns to the debugger */
-#define DEFAULT_ADDR  0xC000
 
 /* Exit statuses, besides the value written to the stop register. */
 enum {
@@ -192,7 +192,7 @@ static void usage(FILE *f)
 {
     fprintf(f,
             "Usage: mspsim [options] firmware\n"
-            "  -b, --binary ADDR     raw binary loaded at ADDR (default 0x%04X)\n"
+            "  -b, --binary ADDR     raw binary loaded at ADDR (default: ELF or Intel HEX)\n"
             "  -g, --debug           start paused in the interactive debugger\n"
             "  -n, --max-cycles N    stop after N cycles\n"
             "  -t, --trace           trace executed instructions, register changes, "
@@ -203,8 +203,7 @@ static void usage(FILE *f)
             "\n"
             "Ctrl-] returns to the debugger. Exit status: the value written to the stop\n"
             "register 0x01FE; 124 cycle limit, 125 CPU off with no wake-up, 130 interrupted,\n"
-            "132 illegal instruction, 1 load error, 2 usage error.\n",
-            DEFAULT_ADDR);
+            "132 illegal instruction, 1 load error, 2 usage error.\n");
 }
 
 static bool parse_number(const char *s, unsigned long long max, unsigned long long *out)
@@ -214,19 +213,6 @@ static bool parse_number(const char *s, unsigned long long max, unsigned long lo
     errno = 0;
     *out  = strtoull(s, &end, 0);
     return errno == 0 && end != s && *end == 0 && *out <= max;
-}
-
-/* ELF and Intel HEX images need loaders that do not exist yet. */
-static bool unsupported_format(const char *path)
-{
-    unsigned char head[4] = { 0 };
-    FILE *f               = fopen(path, "rb");
-
-    if (f == NULL)
-        return false;
-    size_t n = fread(head, 1, sizeof head, f);
-    fclose(f);
-    return (n == 4 && memcmp(head, "\177ELF", 4) == 0) || (n > 0 && head[0] == ':');
 }
 
 int main(int argc, char *argv[])
@@ -241,7 +227,7 @@ int main(int argc, char *argv[])
         { "help", no_argument, NULL, 'h' },
         { NULL, 0, NULL, 0 },
     };
-    unsigned long long addr = DEFAULT_ADDR, number;
+    unsigned long long addr = 0, number;
     bool binary = false, debug = false, trace = false;
     const char *trace_path = NULL;
     int c, status;
@@ -289,11 +275,6 @@ int main(int argc, char *argv[])
     }
     const char *path = argv[optind];
 
-    if (!binary && unsupported_format(path)) {
-        fprintf(stderr, "mspsim: %s: ELF and Intel HEX are not supported yet; use -b ADDR\n", path);
-        return EXIT_LOAD;
-    }
-
     emu        = emu_create();
     emu->trace = trace;
     if (trace_path != NULL && (emu->trace_file = fopen(trace_path, "w")) == NULL) {
@@ -302,14 +283,18 @@ int main(int argc, char *argv[])
         return EXIT_LOAD;
     }
 
-    long size = load_binary(emu, path, addr);
+    char err[256];
+    long size = binary ? load_binary(emu, path, addr, err, sizeof err)
+                       : load_firmware(emu, path, err, sizeof err);
     if (size < 0) {
-        fprintf(stderr, "mspsim: %s: %s\n", path, strerror(errno));
+        fprintf(stderr, "mspsim: %s: %s\n", path, err);
         status = EXIT_LOAD;
         goto done;
     }
+    emu_reset(emu);
     if (!quiet)
-        emu_printf(emu, "Loaded %s: %ld bytes at 0x%04llX\n", path, size, addr);
+        emu_printf(emu, "Loaded %s: %ld bytes, %d symbols, start at 0x%04x\n", path, size,
+                   emu->nsymbols, emu->cpu->pc);
 
     signal(SIGINT, handle_sigint);
 
