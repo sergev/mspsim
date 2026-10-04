@@ -22,8 +22,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "cpu/decoder.h"
 #include "emulator.h"
 
-void decode_formatII(Emulator *emu, uint16_t instruction, bool disassemble);
+void decode_formatII(Emulator *emu, uint16_t instruction, Listing *l);
 
 #endif

@@ -40,7 +40,7 @@ TEST(step_n)
     exec_cmd(emu, "step 2");
     CHECK_EQ(emu->cpu->r5, 2);
     CHECK_EQ(emu->cpu->pc, 0xC004);
-    CHECK(strstr(console_text, "JMP") != NULL);
+    CHECK(strstr(console_text, "jmp") != NULL);
 }
 
 TEST(step_stops_at_stop_register)
@@ -93,7 +93,7 @@ TEST(disassemble_illegal)
 
     PROGRAM(0xC000, 0x0000);
     exec_cmd(emu, "dis 1");
-    CHECK(strstr(console_text, "INVALID") != NULL);
+    CHECK(strstr(console_text, ".word 0x0000") != NULL);
     CHECK_EQ(emu->stop, EMU_RUNNING);
 }
 

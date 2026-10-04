@@ -7,6 +7,7 @@
 #include "cpu/interrupts.h"
 #include "cpu/registers.h"
 #include "debugger/debugger.h"
+#include "debugger/trace.h"
 #include "uart/uart.h"
 
 Emulator *emu_create(void)
@@ -14,6 +15,7 @@ Emulator *emu_create(void)
     Emulator *emu = calloc(1, sizeof(Emulator));
     emu->cpu      = calloc(1, sizeof(Cpu));
     emu->debugger = calloc(1, sizeof(Debugger));
+    emu->tracer   = calloc(1, sizeof(Trace));
     setup_debugger(emu);
 
     /* Info memory and the code area read as erased flash. */
@@ -38,6 +40,7 @@ void emu_destroy(Emulator *emu)
         return;
     free(emu->cpu);
     free(emu->debugger);
+    free(emu->tracer);
     free(emu);
 }
 

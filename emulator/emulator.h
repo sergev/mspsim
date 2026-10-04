@@ -8,6 +8,7 @@
 
 typedef struct Cpu Cpu;
 typedef struct Debugger Debugger;
+typedef struct Trace Trace;
 
 /* Why the emulator stopped. */
 typedef enum {
@@ -32,8 +33,9 @@ typedef struct Emulator {
     uint64_t uart_poll_at; /* cycle of the next console input poll */
     bool uart_eof;         /* console input is exhausted */
 
-    bool trace;       /* tracing enabled (Plan Step 7) */
+    bool trace;       /* tracing enabled; see debugger/trace.h */
     FILE *trace_file; /* trace output; NULL means stderr */
+    Trace *tracer;
 } Emulator;
 
 /* Allocate an emulator in its reset state. */

@@ -27,6 +27,7 @@ add_library(msp430core STATIC
     emulator/debugger/debugger.c
     emulator/debugger/disassembler.c
     emulator/debugger/register_display.c
+    emulator/debugger/trace.c
 )
 target_include_directories(msp430core PUBLIC emulator)
 

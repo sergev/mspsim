@@ -36,8 +36,8 @@ mspsim [options] firmware
   -b, --binary ADDR     raw binary loaded at ADDR (default 0xC000)
   -g, --debug           start paused in the interactive debugger
   -n, --max-cycles N    stop after N cycles
-  -t, --trace           trace executed instructions (not implemented yet)
-  -o, --trace-file F    write trace to F instead of stderr
+  -t, --trace           trace executed instructions, register changes, loads/stores
+  -o, --trace-file F    write trace to F instead of stderr (implies -t)
   -q, --quiet           no banner/diagnostics, only UART output
 ```
 
@@ -56,6 +56,25 @@ The run ends when the program writes to the stop register, hits an illegal instr
 | 132 | illegal instruction |
 | 1 | the firmware could not be loaded |
 | 2 | bad command line |
+
+### Tracing
+
+`-t` prints each executed instruction to stderr (`-o FILE` writes it to a file), followed by its data loads and stores and the registers it changed:
+
+```
+c00a: 5292 0200 0202   add   &0x0200, &0x0202
+      R  [0200] -> 0005
+      R  [0202] -> 0003
+      W  [0202] <- 0008
+c010: 4fe5 0003        mov.b @r15, 3(r5)
+      Rb [1234] -> 41
+      Wb [0207] <- 41
+c000: 8314             sub   #0x0001, r4
+      SR 0000 -> 0004 [N]
+      R4 0000 -> ffff
+```
+
+Instruction fetches and PC changes are left out. Interrupt entry shows as `*** interrupt vector 0xffee`, followed by the stack pushes, the vector load and the PC, SP and SR changes. In the debugger, `trace on` and `trace off` switch tracing during a session.
 
 ### Debugger
 

@@ -28,7 +28,7 @@ Python, wxPython, the GUI, the websocket server, the LaunchPad-specific peripher
 
 ## Current state
 
-Steps 1–6 are done; the remaining steps keep their original numbers.
+Steps 1–7 are done; the remaining steps keep their original numbers.
 
 - **Build:** CMake builds the `msp430core` library, vendored linenoise, the `mspsim` front-end (`src/main.c`) and the tests (`test/`, run with `ctest`). It is warning-free under `-Wall -Wextra`. Headers are self-contained; the `header_check` target enforces it.
 - **Removed:** the Python/wxPython GUI, the websocket server, MSVC support, and all peripherals (clock module, Timer_A, Port 1, USCI).
@@ -47,41 +47,13 @@ Steps 1–6 are done; the remaining steps keep their original numbers.
 - **Stop register:** a write to 0x01FE sets `emu->stop = EMU_PROGRAM` and `emu->exit_code`.
 - **Registers:** `cpu->r[16]` with named aliases; SR is a plain `uint16_t` with `SR_*` masks, so its reserved bits survive.
 - **Core state:** the core has no globals. `emu_create()`/`emu_destroy()`/`emu_reset()` manage an emulator; `emu_run()` runs it until a `StopReason`.
-- **Front-end:** `src/main.c`, with `getopt_long` options, batch mode and a linenoise debugger prompt. The exit status reflects the stop reason. Core output goes through `emu_printf()` and the `print_console()` hook: stderr in batch mode, stdout at the prompt. Without `-b`, a raw image is loaded at 0xC000, and ELF/Intel HEX images are rejected until Step 8. `-t`, `-o` and `trace on|off` set `emu->trace`/`emu->trace_file`, which do nothing until Step 7.
-- **Debugger:** `exec_cmd()` in `debugger.c` runs one command and returns stay/run/quit.
+- **Front-end:** `src/main.c`, with `getopt_long` options, batch mode and a linenoise debugger prompt. The exit status reflects the stop reason. Core output goes through `emu_printf()` and the `print_console()` hook: stderr in batch mode, stdout at the prompt. Without `-b`, a raw image is loaded at 0xC000, and ELF/Intel HEX images are rejected until Step 8.
+- **Debugger:** `exec_cmd()` in `debugger.c` runs one command and returns stay/run/quit. `dis` and the trace share one listing format.
+- **Tracing:** `-t`, `-o FILE` or `trace on` enable `debugger/trace.c`: each instruction, its data loads/stores and its register changes, plus interrupt entries. When tracing is off the bus pays one branch per access. Golden tests are in `test/test_trace.c`.
 - **Loading:** only raw `.bin` images loaded at 0xC000. `cpu_reset()` hard-codes PC = 0xC000.
 - **Known ALU bugs, left for Step 9:** `SUB` never clears C; `ADDC`/`SUBC` compute C without the carry-in; `DADD` is a no-op; V on subtraction is suspect.
 
 ## Remaining steps
-
-### Step 7 — Tracing
-
-**Mechanism:**
-- Before each instruction, snapshot R0–R15.
-- The memory bus appends every `ACC_DATA` access to a per-instruction log; `ACC_FETCH` is not logged.
-- After the instruction, print one line for the instruction, followed by the loads/stores in execution order and the registers whose values changed. The PC is excluded, because it is implied by the next line; SR is shown decoded.
-
-**Example output format:**
-```
-c004: 40b2 5a80 0120   mov   #0x5a80, &0x0120
-      W  [0120] <- 5a80
-c00a: 4031 0400        mov   #0x0400, sp
-      SP 0000 -> 0400
-c00e: 5592 0200 0202   add   &0x0200, &0x0202
-      R  [0200] -> 0005
-      R  [0202] -> 0003
-      W  [0202] <- 0008
-      SR 0000 -> 0000
-c014: 4fe5 0003        mov.b @r15, 3(r5)
-      Rb [1234] -> 41
-      Wb [0207] <- 41
-```
-
-**Interrupts:** interrupt entry gets a trace line of its own, e.g. `*** interrupt vector 0xffee`. It is followed by the PC/SR pushes as stores, the vector read as a load, and the SP/PC/SR changes.
-
-**Output and performance:** trace output goes to stderr, or to `--trace-file`. It is off by default. When it is off, the cost is a single branch per memory access.
-
-**Check:** golden-output tests compare traces of small hand-encoded programs.
 
 ### Step 8 — Loaders
 
@@ -92,7 +64,7 @@ c014: 4fe5 0003        mov.b @r15, 3(r5)
 
 ### Step 9 — CPU correctness and tests
 
-1. **Test harness:** extend the existing `test/` harness with assertions on the trace log (from Step 7).
+1. **Test harness:** extend the existing `test/` harness with assertions on the trace log (`emu->tracer`, or golden text as in `test/test_trace.c`).
 2. **Coverage:**
    - all 27 core instructions plus the emulated ones (via the encodings they compile to), in both byte and word modes;
    - all seven addressing modes, including the constant generators (R2/R3), PC-relative, `@PC+` immediates, and SP auto-increment of 2 for byte operations;
@@ -109,7 +81,7 @@ c014: 4fe5 0003        mov.b @r15, 3(r5)
 
 ## Commit order
 
-9 (unit tests, at least the instruction set) → 7 (tracing, using the test harness for golden traces) → 8 → 10.
+9 (unit tests, at least the instruction set) → 8 → 10.
 
 Each step is one or more commits that leave the tree building.
 

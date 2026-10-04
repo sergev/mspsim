@@ -42,7 +42,7 @@ uint16_t fetch(Emulator *emu)
 }
 
 // ##########+++ CPU Decode Cycle +++##########
-void decode(Emulator *emu, uint16_t instruction, bool disassemble)
+void decode(Emulator *emu, uint16_t instruction, Listing *l)
 {
     uint8_t FormatId;
 
@@ -50,18 +50,16 @@ void decode(Emulator *emu, uint16_t instruction, bool disassemble)
 
     if (FormatId == 0x1) {
         // format II (single operand) instruction
-        decode_formatII(emu, instruction, disassemble);
+        decode_formatII(emu, instruction, l);
     } else if (FormatId >= 0x2 && FormatId <= 3) {
         // format III (jump) instruction
-        decode_formatIII(emu, instruction, disassemble);
+        decode_formatIII(emu, instruction, l);
     } else if (FormatId >= 0x4) {
         // format I (two operand) instruction
-        decode_formatI(emu, instruction, disassemble);
-    } else if (disassemble) {
-        Listing listing;
-
-        listing_init(&listing, instruction);
-        print_listing(emu, &listing, "[INVALID INSTRUCTION]");
+        decode_formatI(emu, instruction, l);
+    } else if (l) {
+        snprintf(l->mnemonic, sizeof l->mnemonic, ".word");
+        snprintf(l->ops, sizeof l->ops, "0x%04x", instruction);
     } else {
         emu->stop = EMU_ILLEGAL;
     }
@@ -126,85 +124,95 @@ int16_t run_constant_generator(uint8_t source, uint8_t as_flag)
     return generated_constant;
 }
 
-void listing_init(Listing *l, uint16_t instruction)
+void listing_init(Listing *l, uint16_t addr, uint16_t instruction)
 {
-    snprintf(l->hex, sizeof l->hex, "%04X", instruction);
-    l->ops[0] = 0;
+    l->addr        = addr;
+    l->words[0]    = instruction;
+    l->nwords      = 1;
+    l->mnemonic[0] = 0;
+    l->ops[0]      = 0;
 }
 
-void print_listing(Emulator *emu, Listing *l, const char *mnemonic)
+void format_listing(const Listing *l, char *buf, size_t size)
 {
-    int i;
+    char hex[16] = "";
 
-    // Make little endian big endian
-    for (i = 0; i + 4 <= (int)strlen(l->hex); i += 4) {
-        char one = l->hex[i], two = l->hex[i + 1];
+    for (int i = 0; i < l->nwords; i++) {
+        char word[8];
 
-        l->hex[i]     = l->hex[i + 2];
-        l->hex[i + 1] = l->hex[i + 3];
-        l->hex[i + 2] = one;
-        l->hex[i + 3] = two;
+        snprintf(word, sizeof word, i ? " %04x" : "%04x", l->words[i]);
+        str_append(hex, sizeof hex, word);
     }
+    snprintf(buf, size, "%04x: %-14s   %-5s %s", l->addr, hex, l->mnemonic, l->ops);
 
-    emu_printf(emu, "%-12s\t%s\t%s\n", l->hex, mnemonic, l->ops);
+    size_t n = strlen(buf);
+    while (n > 0 && buf[n - 1] == ' ')
+        buf[--n] = 0;
 }
 
 static uint16_t fetch_ext(Emulator *emu, Listing *l)
 {
-    char part[8];
     uint16_t word = fetch(emu);
 
-    snprintf(part, sizeof part, "%04X", word);
-    str_append(l->hex, sizeof l->hex, part);
+    if (l && l->nwords < 3)
+        l->words[l->nwords++] = word;
     return word;
 }
 
 void decode_operand(Emulator *emu, Listing *l, Operand *op, uint8_t reg, uint8_t mode, bool byte,
-                    bool is_source, bool disassemble)
+                    bool is_source)
 {
-    Cpu *cpu = emu->cpu;
-    char name[10], text[32];
-
-    reg_num_to_name(reg, name);
+    Cpu *cpu       = emu->cpu;
+    int16_t offset = 0;
 
     if (is_source && ((reg == 2 && mode > 1) || reg == 3)) {
         op->kind  = OPND_CONST;
         op->value = run_constant_generator(reg, mode);
-        snprintf(text, sizeof text, "#0x%04X", op->value);
     } else if (mode == 0) {
         op->kind = OPND_REG;
         op->reg  = reg;
-        snprintf(text, sizeof text, "%s", name);
     } else if (mode == 1) {
-        uint16_t where  = cpu->pc;
-        uint16_t offset = fetch_ext(emu, l);
+        uint16_t where = cpu->pc;
 
+        offset   = fetch_ext(emu, l);
         op->kind = OPND_MEM;
-        if (reg == 0) { /* symbolic: relative to the extension word */
+        if (reg == 0) /* symbolic: relative to the extension word */
             op->addr = where + offset;
-            snprintf(text, sizeof text, "0x%04X", op->addr);
-        } else if (reg == 2) { /* absolute */
+        else if (reg == 2) /* absolute */
             op->addr = offset;
-            snprintf(text, sizeof text, "&0x%04X", offset);
-        } else { /* indexed */
+        else /* indexed */
             op->addr = cpu->r[reg] + offset;
-            snprintf(text, sizeof text, "0x%04X(%s)", offset, name);
-        }
     } else if (mode == 2) {
         op->kind = OPND_MEM;
         op->addr = cpu->r[reg];
-        snprintf(text, sizeof text, "@%s", name);
     } else if (reg == 0) { /* immediate, @PC+ */
         op->kind  = OPND_CONST;
         op->value = fetch_ext(emu, l);
-        snprintf(text, sizeof text, "#0x%04X", byte ? op->value & 0xFF : op->value);
     } else { /* @Rn+; SP always steps by 2 */
         op->kind = OPND_MEM;
         op->addr = cpu->r[reg];
-        if (!disassemble)
+        if (!l)
             cpu->r[reg] += (byte && reg != 1) ? 1 : 2;
-        snprintf(text, sizeof text, "@%s+", name);
     }
+    if (!l)
+        return;
+
+    char name[8], text[32];
+
+    reg_num_to_name(reg, name);
+    if (op->kind == OPND_CONST)
+        snprintf(text, sizeof text, byte ? "#0x%02x" : "#0x%04x",
+                 byte ? op->value & 0xFF : op->value);
+    else if (mode == 0)
+        snprintf(text, sizeof text, "%s", name);
+    else if (mode == 1 && reg == 0)
+        snprintf(text, sizeof text, "0x%04x", op->addr);
+    else if (mode == 1 && reg == 2)
+        snprintf(text, sizeof text, "&0x%04x", op->addr);
+    else if (mode == 1)
+        snprintf(text, sizeof text, "%d(%s)", offset, name);
+    else
+        snprintf(text, sizeof text, mode == 2 ? "@%s" : "@%s+", name);
     str_append(l->ops, sizeof l->ops, text);
 }
 

@@ -36,9 +36,9 @@
 #include "cpu/registers.h"
 #include "memory/memory.h"
 
-void decode_formatII(Emulator *emu, uint16_t instruction, bool disassemble)
+void decode_formatII(Emulator *emu, uint16_t instruction, Listing *l)
 {
-    static const char *const names[] = { "RRC", "SWPB", "RRA", "SXT", "PUSH", "CALL", "RETI" };
+    static const char *const names[] = { "rrc", "swpb", "rra", "sxt", "push", "call", "reti" };
     Cpu *cpu                         = emu->cpu;
 
     uint8_t opcode  = (instruction & 0x0380) >> 7;
@@ -47,26 +47,26 @@ void decode_formatII(Emulator *emu, uint16_t instruction, bool disassemble)
     uint8_t source  = (instruction & 0x000F);
     bool byte       = (bw_flag == EMU_BYTE);
 
-    Listing listing;
     Operand op;
     uint16_t value;
 
-    listing_init(&listing, instruction);
-    decode_operand(emu, &listing, &op, source, as_flag, byte, true, disassemble);
-
-    if (disassemble) {
-        char mnemonic[16];
-
-        if (opcode > 6) {
-            print_listing(emu, &listing, "[INVALID INSTRUCTION]");
-            return;
+    if (opcode == 6) { /* RETI has no operand */
+        if (l)
+            snprintf(l->mnemonic, sizeof l->mnemonic, "reti");
+    } else if (opcode == 7) {
+        if (l) {
+            snprintf(l->mnemonic, sizeof l->mnemonic, ".word");
+            snprintf(l->ops, sizeof l->ops, "0x%04x", instruction);
         }
-        /* SWPB, SXT, CALL and RETI have no byte form */
-        snprintf(mnemonic, sizeof mnemonic, "%s%s", names[opcode],
-                 (byte && !(opcode & 1) && opcode != 6) ? ".B" : "");
-        print_listing(emu, &listing, mnemonic);
-        return;
+    } else {
+        decode_operand(emu, l, &op, source, as_flag, byte, true);
+        /* SWPB, SXT and CALL have no byte form */
+        if (l)
+            snprintf(l->mnemonic, sizeof l->mnemonic, "%s%s", names[opcode],
+                     (byte && !(opcode & 1)) ? ".b" : "");
     }
+    if (l)
+        return;
 
     switch (opcode) {
         /*  RRC Rotate right through carry

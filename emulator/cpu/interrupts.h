@@ -16,7 +16,7 @@
 /* Assert or deassert a level-sensitive request; the source deasserts it. */
 void cpu_set_irq(Emulator *emu, unsigned irq, bool level);
 
-/* Accept the highest-priority pending request; true if one was taken. */
-bool handle_interrupts(Emulator *emu);
+/* Accept the highest-priority pending request; returns its vector number, or -1. */
+int handle_interrupts(Emulator *emu);
 
 #endif

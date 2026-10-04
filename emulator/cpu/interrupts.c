@@ -18,7 +18,7 @@ void cpu_set_irq(Emulator *emu, unsigned irq, bool level)
         cpu->irq_pending &= ~(1u << irq);
 }
 
-bool handle_interrupts(Emulator *emu)
+int handle_interrupts(Emulator *emu)
 {
     Cpu *cpu         = emu->cpu;
     uint16_t pending = cpu->irq_pending;
@@ -27,7 +27,7 @@ bool handle_interrupts(Emulator *emu)
     if (!(cpu->sr & SR_GIE))
         pending &= 1u << NMI_IRQ;
     if (pending == 0)
-        return false;
+        return -1;
 
     for (irq = NMI_IRQ; !(pending & (1u << irq)); irq--)
         ;
@@ -43,5 +43,5 @@ bool handle_interrupts(Emulator *emu)
 
     /* SR is cleared except SCG0 (SLAU144, 2.2.3). */
     cpu->sr &= SR_SCG0;
-    return true;
+    return irq;
 }

@@ -197,7 +197,7 @@ static void usage(FILE *f)
             "  -n, --max-cycles N    stop after N cycles\n"
             "  -t, --trace           trace executed instructions, register changes, "
             "loads/stores\n"
-            "  -o, --trace-file F    write trace to F instead of stderr\n"
+            "  -o, --trace-file F    write trace to F instead of stderr (implies -t)\n"
             "  -q, --quiet           no banner/diagnostics, only UART output\n"
             "  -h, --help            show this help\n"
             "\n"
@@ -270,6 +270,7 @@ int main(int argc, char *argv[])
             break;
         case 'o':
             trace_path = optarg;
+            trace      = true;
             break;
         case 'q':
             quiet = true;

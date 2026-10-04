@@ -10,6 +10,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 
 /* CPU state and interrupt API, used by every test. */
 #include "cpu/interrupts.h"
@@ -44,6 +45,15 @@ extern int test_failed;
                    _e);                                                                         \
             test_failed = 1;                                                                    \
         }                                                                                       \
+    } while (0)
+
+#define CHECK_STR(actual, expected)                                                              \
+    do {                                                                                         \
+        const char *_a = (actual), *_e = (expected);                                             \
+        if (strcmp(_a, _e) != 0) {                                                               \
+            printf("  %s:%d: %s ==\n%s\n  expected\n%s\n", __FILE__, __LINE__, #actual, _a, _e); \
+            test_failed = 1;                                                                     \
+        }                                                                                        \
     } while (0)
 
 /* Fresh emulator from emu_create(); freed by run_tests(). */

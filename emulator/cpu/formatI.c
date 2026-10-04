@@ -37,10 +37,10 @@
 #include "cpu/registers.h"
 #include "utilities.h"
 
-void decode_formatI(Emulator *emu, uint16_t instruction, bool disassemble)
+void decode_formatI(Emulator *emu, uint16_t instruction, Listing *l)
 {
-    static const char *const names[] = { "MOV",  "ADD", "ADDC", "SUBC", "SUB", "CMP",
-                                         "DADD", "BIT", "BIC",  "BIS",  "XOR", "AND" };
+    static const char *const names[] = { "mov",  "add", "addc", "subc", "sub", "cmp",
+                                         "dadd", "bit", "bic",  "bis",  "xor", "and" };
     Cpu *cpu                         = emu->cpu;
 
     uint8_t opcode      = (instruction & 0xF000) >> 12;
@@ -52,24 +52,19 @@ void decode_formatI(Emulator *emu, uint16_t instruction, bool disassemble)
     bool byte           = (bw_flag == EMU_BYTE);
     uint16_t mask       = byte ? 0xFF : 0xFFFF;
 
-    Listing listing;
     Operand src, dst;
     uint16_t source_value = 0, dst_value = 0, result;
 
-    listing_init(&listing, instruction);
-
     /* Source is read before the destination's extension word is fetched. */
-    decode_operand(emu, &listing, &src, source, as_flag, byte, true, disassemble);
-    if (!disassemble)
+    decode_operand(emu, l, &src, source, as_flag, byte, true);
+    if (!l)
         source_value = operand_read(emu, &src, byte);
-    str_append(listing.ops, sizeof listing.ops, ", ");
-    decode_operand(emu, &listing, &dst, destination, ad_flag, byte, false, disassemble);
+    else
+        str_append(l->ops, sizeof l->ops, ", ");
+    decode_operand(emu, l, &dst, destination, ad_flag, byte, false);
 
-    if (disassemble) {
-        char mnemonic[16];
-
-        snprintf(mnemonic, sizeof mnemonic, "%s%s", names[opcode - 4], byte ? ".B" : "");
-        print_listing(emu, &listing, mnemonic);
+    if (l) {
+        snprintf(l->mnemonic, sizeof l->mnemonic, "%s%s", names[opcode - 4], byte ? ".b" : "");
         return;
     }
 

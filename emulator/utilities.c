@@ -124,76 +124,10 @@ int8_t reg_name_to_num(char *name)
  */
 void reg_num_to_name(uint8_t number, char *name)
 {
-    switch (number) {
-    case 0x0: {
-        strncpy(name, "PC\0", 3);
-        return;
-    }
-    case 0x1: {
-        strncpy(name, "SP\0", 3);
-        return;
-    }
-    case 0x2: {
-        strncpy(name, "SR\0", 3);
-        return;
-    }
-    case 0x3: {
-        strncpy(name, "R3\0", 3);
-        return;
-    }
-    case 0x4: {
-        strncpy(name, "R4\0", 3);
-        return;
-    }
-    case 0x5: {
-        strncpy(name, "R5\0", 3);
-        return;
-    }
-    case 0x6: {
-        strncpy(name, "R6\0", 3);
-        return;
-    }
-    case 0x7: {
-        strncpy(name, "R7\0", 3);
-        return;
-    }
-    case 0x8: {
-        strncpy(name, "R8\0", 3);
-        return;
-    }
-    case 0x9: {
-        strncpy(name, "R9\0", 3);
-        return;
-    }
-    case 0xA: {
-        strncpy(name, "R10\0", 4);
-        return;
-    }
-    case 0xB: {
-        strncpy(name, "R11\0", 4);
-        return;
-    }
-    case 0xC: {
-        strncpy(name, "R12\0", 4);
-        return;
-    }
-    case 0xD: {
-        strncpy(name, "R13\0", 4);
-        return;
-    }
-    case 0xE: {
-        strncpy(name, "R14\0", 4);
-        return;
-    }
-    case 0xF: {
-        strncpy(name, "R15\0", 4);
-        return;
-    }
-    default: {
-        strncpy(name, "???\0", 4);
-        return;
-    }
-    }
+    static const char *const names[16] = { "pc", "sp", "sr",  "r3",  "r4",  "r5",  "r6",  "r7",
+                                           "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15" };
+
+    strcpy(name, number < 16 ? names[number] : "???");
 }
 
 /**

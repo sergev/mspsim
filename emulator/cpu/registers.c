@@ -24,6 +24,7 @@
 
 #include "cpu/decoder.h"
 #include "cpu/interrupts.h"
+#include "debugger/trace.h"
 #include "uart/uart.h"
 
 void reg_write(Cpu *cpu, unsigned reg, uint16_t val, bool byte)
@@ -36,22 +37,34 @@ void reg_write(Cpu *cpu, unsigned reg, uint16_t val, bool byte)
 void cpu_step(Emulator *emu)
 {
     Cpu *cpu = emu->cpu;
+    int irq;
 
     uart_tick(emu);
     if (!(cpu->sr & SR_CPUOFF)) {
         uint16_t pc = cpu->pc;
 
-        decode(emu, fetch(emu), EXECUTE);
+        if (emu->trace)
+            trace_begin(emu);
+        decode(emu, fetch(emu), NULL);
         if (emu->stop == EMU_ILLEGAL) {
             cpu->pc = pc;
             return;
         }
         cpu->cycles += 4; /* average; exact counts in Plan step 9 */
+        if (emu->trace)
+            trace_end(emu);
     } else {
         cpu->cycles += 1;
     }
-    if (handle_interrupts(emu))
+
+    if (emu->trace)
+        trace_snapshot(emu);
+    irq = handle_interrupts(emu);
+    if (irq >= 0) {
         cpu->cycles += 6;
+        if (emu->trace)
+            trace_interrupt(emu, irq);
+    }
 }
 
 void cpu_reset(Emulator *emu)

@@ -81,9 +81,19 @@ check missing_file 1 "" $? "$out"
 out=$("$MSPSIM" 2>/dev/null)
 check no_args 2 "" $? "$out"
 
+out=$("$MSPSIM" -q -o "$T/trace" "$T/hello.bin")
+status=$?
+head -1 "$T/trace" | grep -q "^c000: 403f c100        mov   #0xc100, r15$" && grep -q "Wb \[0067\] <- 48" "$T/trace"
+check trace_file "0 0" "Hello" "$status $?" "$out"
+
+out=$("$MSPSIM" -q -t "$T/hello.bin" 2>"$T/err")
+status=$?
+grep -q "^c016: 4382 01fe        mov   #0x0000, &0x01fe$" "$T/err"
+check trace_stderr "0 0" "Hello" "$status $?" "$out"
+
 out=$(printf 'step\n\ndis 1 C016\nquit\n' | "$MSPSIM" -q -g "$T/hello.bin")
 status=$?
-echo "$out" | grep -q "0xC004:" && echo "$out" | grep -q "0xC006:" && echo "$out" | grep -q "0xC016:"
+echo "$out" | grep -q "^c004:" && echo "$out" | grep -q "^c006:" && echo "$out" | grep -q "^c016:"
 check debugger_step "0 0" "" "$status $?" ""
 
 out=$(printf 'break C016\nrun\nquit\n' | "$MSPSIM" -q -g "$T/hello.bin")

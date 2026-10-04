@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "debugger/trace.h"
 #include "uart/uart.h"
 
 /*
@@ -49,19 +50,28 @@ static void stop(Emulator *emu, uint16_t code)
 uint16_t mem_read(Emulator *emu, uint16_t addr, int size, Access kind)
 {
     bool io = (addr < IO_END && kind == ACC_DATA);
+    uint16_t val;
 
+    if (size == 2)
+        addr &= ~1;
     if (size == 1)
-        return io ? io_read(emu, addr) : emu->mem[addr];
-    addr &= ~1;
-    if (io)
-        return io_read(emu, addr) | (io_read(emu, addr + 1) << 8);
-    return emu->mem[addr] | (emu->mem[addr + 1] << 8);
+        val = io ? io_read(emu, addr) : emu->mem[addr];
+    else if (io)
+        val = io_read(emu, addr) | (io_read(emu, addr + 1) << 8);
+    else
+        val = emu->mem[addr] | (emu->mem[addr + 1] << 8);
+
+    if (emu->trace && kind == ACC_DATA)
+        trace_access(emu, false, size, addr, val);
+    return val;
 }
 
 void mem_write(Emulator *emu, uint16_t addr, uint16_t val, int size)
 {
     if (size == 2)
         addr &= ~1;
+    if (emu->trace)
+        trace_access(emu, true, size, addr, val);
     if (addr >= IO_END) {
         emu->mem[addr] = val;
         if (size == 2)
