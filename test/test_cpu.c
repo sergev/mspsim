@@ -136,6 +136,36 @@ TEST(rla_flags)
     CHECK_EQ(emu->cpu->sr, C | V);
 }
 
+/* A jump's 10-bit word offset reaches -512..+511 words; offsets of 256 words and more
+ * (bit 8 set) are forward too. */
+TEST(jump_offsets)
+{
+    static const struct {
+        uint16_t insn, target;
+    } jumps[] = {
+        { 0x3C00, 0xC002 }, /* jmp $+2 */
+        { 0x3CFF, 0xC200 }, /* +255 words */
+        { 0x3D00, 0xC202 }, /* +256 words */
+        { 0x3D1A, 0xC236 }, /* +282 words */
+        { 0x3DFF, 0xC400 }, /* +511 words, the farthest forward */
+        { 0x3FFF, 0xC000 }, /* jmp $ */
+        { 0x3F00, 0xBE02 }, /* -256 words */
+        { 0x3E00, 0xBC02 }, /* -512 words, the farthest back */
+        { 0x251A, 0xC236 }, /* jz +282 words, taken: Z is set below */
+    };
+    for (size_t i = 0; i < sizeof jumps / sizeof *jumps; i++) {
+        Emulator *emu = emu_new();
+        PROGRAM(0xC000, jumps[i].insn);
+        emu->cpu->sr = Z;
+        step(emu, 1);
+        if (emu->cpu->pc != jumps[i].target) {
+            printf("  %04x: pc %04x, expected %04x\n", jumps[i].insn, emu->cpu->pc,
+                   jumps[i].target);
+            test_failed = 1;
+        }
+    }
+}
+
 /* Cycle counts, SLAU144 tables 3-14 to 3-16. */
 static const struct {
     const char *insn;
@@ -214,7 +244,7 @@ int main(int argc, char **argv)
 {
     static const Test tests[] = {
         T(two_operand_flags), T(single_operand_flags), T(emulated_instructions),
-        T(rla_flags),         T(cycle_counts),
+        T(rla_flags),         T(jump_offsets),          T(cycle_counts),
     };
     return run_tests(tests, sizeof tests / sizeof *tests, argc, argv);
 }

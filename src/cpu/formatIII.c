@@ -40,7 +40,7 @@ unsigned decode_formatIII(Emulator *emu, uint16_t instruction, Listing *l)
 
     uint8_t condition     = (instruction & 0x1C00) >> 10;
     int16_t signed_offset = (instruction & 0x03FF) * 2;
-    bool negative         = signed_offset >> 9;
+    bool negative         = instruction & 0x0200; /* the offset's sign bit */
 
     if (negative) { /* Sign Extend for Arithmetic Operations */
         signed_offset |= 0xF800;
