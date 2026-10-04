@@ -1,0 +1,38 @@
+# TEST JUMP FORWARD AND BACKWARD
+at 1000
+r4 = 1234 JNC (jump forward 1)
+r5 = 5678 JNC (jump backward)
+r6 = 9abc JNC (jump forward 2)
+# TEST JUMP FOR ALL FLAG CONFIGURATIONS
+at 2000
+r4 = 1234 JNC ({V,N,Z,C}=4'b0000)
+at 2001
+r4 = 0000 JNC ({V,N,Z,C}=4'b0001)
+at 2002
+r4 = 1234 JNC ({V,N,Z,C}=4'b0010)
+at 2003
+r4 = 0000 JNC ({V,N,Z,C}=4'b0011)
+at 2004
+r4 = 1234 JNC ({V,N,Z,C}=4'b0100)
+at 2005
+r4 = 0000 JNC ({V,N,Z,C}=4'b0101)
+at 2006
+r4 = 1234 JNC ({V,N,Z,C}=4'b0110)
+at 2007
+r4 = 0000 JNC ({V,N,Z,C}=4'b0111)
+at 2008
+r4 = 1234 JNC ({V,N,Z,C}=4'b1000)
+at 2009
+r4 = 0000 JNC ({V,N,Z,C}=4'b1001)
+at 200a
+r4 = 1234 JNC ({V,N,Z,C}=4'b1010)
+at 200b
+r4 = 0000 JNC ({V,N,Z,C}=4'b1011)
+at 200c
+r4 = 1234 JNC ({V,N,Z,C}=4'b1100)
+at 200d
+r4 = 0000 JNC ({V,N,Z,C}=4'b1101)
+at 200e
+r4 = 1234 JNC ({V,N,Z,C}=4'b1110)
+at 200f
+r4 = 0000 JNC ({V,N,Z,C}=4'b1111)

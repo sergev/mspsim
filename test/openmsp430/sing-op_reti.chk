@@ -1,0 +1,154 @@
+# RETI Instruction test
+at 1000
+r4 = 0000 RESET Vector: R4  value
+r5 = 0000 RESET Vector: R5  value
+r6 = 0000 RESET Vector: R6  value
+r7 = 0000 RESET Vector: R7  value
+r8 = 0000 RESET Vector: R8  value
+r9 = 0000 RESET Vector: R9  value
+r10 = 0000 RESET Vector: R10 value
+r11 = 0000 RESET Vector: R11 value
+r12 = 0000 RESET Vector: R12 value
+r13 = 0000 RESET Vector: R13 value
+r14 = 0000 RESET Vector: R14 value
+# RETI Instruction test
+at 2000
+r1 = 0252 RETI: SP value
+r2 = 0145 RETI: SR value
+r5 = 1234 RETI: R5 value
+# Test interruption 0
+at 3000
+irq 0001 15
+at 3001
+r1 = 0252 IRQ  0: SP value
+r2.3 = 0001 IRQ  0: GIE value
+r6 = 5678 IRQ  0: R6 value
+r7 = 0000 IRQ  0: R7 value
+r8 = 024e IRQ  0: R8 value
+# Test interruption 1
+at 4000
+irq 0003 15
+at 4001
+r1 = 0252 IRQ  1: SP value
+r2.3 = 0001 IRQ  1: GIE value
+r6 = 9abc IRQ  1: R6 value
+r7 = 0000 IRQ  1: R7 value
+r8 = 024e IRQ  1: R8 value
+# Test interruption 2
+at 5000
+irq 0007 15
+at 5001
+r1 = 0252 IRQ  2: SP value
+r2.3 = 0001 IRQ  2: GIE value
+r6 = def1 IRQ  2: R6 value
+r7 = 0000 IRQ  2: R7 value
+r8 = 024e IRQ  2: R8 value
+# Test interruption 3
+at 6000
+irq 000f 15
+at 6001
+r1 = 0252 IRQ  3: SP value
+r2.3 = 0001 IRQ  3: GIE value
+r6 = 2345 IRQ  3: R6 value
+r7 = 0000 IRQ  3: R7 value
+r8 = 024e IRQ  3: R8 value
+# Test interruption 4
+at 7000
+irq 001f 15
+at 7001
+r1 = 0252 IRQ  4: SP value
+r2.3 = 0001 IRQ  4: GIE value
+r6 = 6789 IRQ  4: R6 value
+r7 = 0000 IRQ  4: R7 value
+r8 = 024e IRQ  4: R8 value
+# Test interruption 5
+at 8000
+irq 003f 15
+at 8001
+r1 = 0252 IRQ  5: SP value
+r2.3 = 0001 IRQ  5: GIE value
+r6 = abcd IRQ  5: R6 value
+r7 = 0000 IRQ  5: R7 value
+r8 = 024e IRQ  5: R8 value
+# Test interruption 6
+at 9000
+irq 007f 15
+at 9001
+r1 = 0252 IRQ  6: SP value
+r2.3 = 0001 IRQ  6: GIE value
+r6 = ef12 IRQ  6: R6 value
+r7 = 0000 IRQ  6: R7 value
+r8 = 024e IRQ  6: R8 value
+# Test interruption 7
+at a000
+irq 00ff 15
+at a001
+r1 = 0252 IRQ  7: SP value
+r2.3 = 0001 IRQ  7: GIE value
+r6 = 3456 IRQ  7: R6 value
+r7 = 0000 IRQ  7: R7 value
+r8 = 024e IRQ  7: R8 value
+# Test interruption 8
+at b000
+irq 01ff 15
+at b001
+r1 = 0252 IRQ  8: SP value
+r2.3 = 0001 IRQ  8: GIE value
+r6 = 789a IRQ  8: R6 value
+r7 = 0000 IRQ  8: R7 value
+r8 = 024e IRQ  8: R8 value
+# Test interruption 9
+at c000
+irq 03ff 15
+at c001
+r1 = 0252 IRQ  9: SP value
+r2.3 = 0001 IRQ  9: GIE value
+r6 = bcde IRQ  9: R6 value
+r7 = 0000 IRQ  9: R7 value
+r8 = 024e IRQ  9: R8 value
+# Test interruption 10
+at d000
+irq 07ff 15
+at d001
+r1 = 0252 IRQ 10: SP value
+r2.3 = 0001 IRQ 10: GIE value
+r6 = f123 IRQ 10: R6 value
+r7 = 0000 IRQ 10: R7 value
+r8 = 024e IRQ 10: R8 value
+# Test interruption 11
+at e000
+irq 0fff 15
+at e001
+r1 = 0252 IRQ 11: SP value
+r2.3 = 0001 IRQ 11: GIE value
+r6 = 4567 IRQ 11: R6 value
+r7 = 0000 IRQ 11: R7 value
+r8 = 024e IRQ 11: R8 value
+# Test interruption 12
+at f000
+irq 1fff 15
+at f001
+r1 = 0252 IRQ 12: SP value
+r2.3 = 0001 IRQ 12: GIE value
+r6 = 89ab IRQ 12: R6 value
+r7 = 0000 IRQ 12: R7 value
+r8 = 024e IRQ 12: R8 value
+# Test interruption 13
+at f100
+irq 3fff 15
+at f101
+r1 = 0252 IRQ 13: SP value
+r2.3 = 0001 IRQ 13: GIE value
+r6 = cdef IRQ 13: R6 value
+r7 = 0000 IRQ 13: R7 value
+r8 = 024e IRQ 13: R8 value
+# Test interruption NMI:	 rising edge
+at f200
+nmi
+irq 3fff 10
+at f201
+r1 = 0252 NMI: SP value
+r2.3 = 0001 NMI: GIE value
+r6 = 0123 NMI: R6 value
+r7 = 0000 NMI: R7 value
+r8 = 024e NMI: R8 value

@@ -1,0 +1,120 @@
+# Initialization
+at 1000
+r1 = 0252 SP  initialization (R1 value)
+mem0250 = 0000 RAM Initialization (@0x0250 value)
+mem024e = 0000 RAM Initialization (@0x024e value)
+mem024c = 0000 RAM Initialization (@0x024c value)
+mem024a = 0000 RAM Initialization (@0x024a value)
+mem0248 = 0000 RAM Initialization (@0x0248 value)
+mem0246 = 0000 RAM Initialization (@0x0246 value)
+mem0244 = 0000 RAM Initialization (@0x0244 value)
+mem0242 = 0000 RAM Initialization (@0x0242 value)
+mem0240 = 0000 RAM Initialization (@0x0240 value)
+mem023e = 0000 RAM Initialization (@0x023e value)
+mem023c = 0000 RAM Initialization (@0x023c value)
+mem023a = 0000 RAM Initialization (@0x023a value)
+mem0238 = 0000 RAM Initialization (@0x0238 value)
+mem0236 = 0000 RAM Initialization (@0x0236 value)
+mem0234 = 0000 RAM Initialization (@0x0234 value)
+mem0232 = 0000 RAM Initialization (@0x0232 value)
+mem0230 = 0000 RAM Initialization (@0x0230 value)
+# Addressing mode: @Rn
+at 2000
+r1 = 024e PUSH (@Rn mode): SP value
+mem0250 = 1234 PUSH (@Rn mode): @0x0250 value
+mem024e = 5678 PUSH (@Rn mode): @0x024E value
+mem024c = 0000 PUSH (@Rn mode): @0x024c value
+mem024a = 0000 PUSH (@Rn mode): @0x024a value
+mem0248 = 0000 PUSH (@Rn mode): @0x0248 value
+mem0246 = 0000 PUSH (@Rn mode): @0x0246 value
+mem0244 = 0000 PUSH (@Rn mode): @0x0244 value
+mem0242 = 0000 PUSH (@Rn mode): @0x0242 value
+mem0240 = 0000 PUSH (@Rn mode): @0x0240 value
+mem023e = 0000 PUSH (@Rn mode): @0x023e value
+mem023c = 0000 PUSH (@Rn mode): @0x023c value
+mem023a = 0000 PUSH (@Rn mode): @0x023a value
+mem0238 = 0000 PUSH (@Rn mode): @0x0238 value
+mem0236 = 0000 PUSH (@Rn mode): @0x0236 value
+mem0234 = 0000 PUSH (@Rn mode): @0x0234 value
+mem0232 = 0000 PUSH (@Rn mode): @0x0232 value
+mem0230 = 0000 PUSH (@Rn mode): @0x0230 value
+# Addressing mode: @Rn+
+at 3000
+r1 = 024a PUSH (@Rn+ mode): SP value
+mem0250 = 1234 PUSH (@Rn+ mode): @0x0250 value
+mem024e = 5678 PUSH (@Rn+ mode): @0x024E value
+mem024c = 9abc PUSH (@Rn+ mode): @0x024c value
+mem024a = def0 PUSH (@Rn+ mode): @0x024a value
+mem0248 = 0000 PUSH (@Rn+ mode): @0x0248 value
+mem0246 = 0000 PUSH (@Rn+ mode): @0x0246 value
+mem0244 = 0000 PUSH (@Rn+ mode): @0x0244 value
+mem0242 = 0000 PUSH (@Rn+ mode): @0x0242 value
+mem0240 = 0000 PUSH (@Rn+ mode): @0x0240 value
+mem023e = 0000 PUSH (@Rn+ mode): @0x023e value
+mem023c = 0000 PUSH (@Rn+ mode): @0x023c value
+mem023a = 0000 PUSH (@Rn+ mode): @0x023a value
+mem0238 = 0000 PUSH (@Rn+ mode): @0x0238 value
+mem0236 = 0000 PUSH (@Rn+ mode): @0x0236 value
+mem0234 = 0000 PUSH (@Rn+ mode): @0x0234 value
+mem0232 = 0000 PUSH (@Rn+ mode): @0x0232 value
+mem0230 = 0000 PUSH (@Rn+ mode): @0x0230 value
+# Addressing mode: X(Rn)
+at 4000
+r1 = 0246 PUSH (X(Rn) mode): SP value
+mem0250 = 1234 PUSH (X(Rn) mode): @0x0250 value
+mem024e = 5678 PUSH (X(Rn) mode): @0x024E value
+mem024c = 9abc PUSH (X(Rn) mode): @0x024c value
+mem024a = def0 PUSH (X(Rn) mode): @0x024a value
+mem0248 = 0fed PUSH (X(Rn) mode): @0x0248 value
+mem0246 = cba9 PUSH (X(Rn) mode): @0x0246 value
+mem0244 = 0000 PUSH (X(Rn) mode): @0x0244 value
+mem0242 = 0000 PUSH (X(Rn) mode): @0x0242 value
+mem0240 = 0000 PUSH (X(Rn) mode): @0x0240 value
+mem023e = 0000 PUSH (X(Rn) mode): @0x023e value
+mem023c = 0000 PUSH (X(Rn) mode): @0x023c value
+mem023a = 0000 PUSH (X(Rn) mode): @0x023a value
+mem0238 = 0000 PUSH (X(Rn) mode): @0x0238 value
+mem0236 = 0000 PUSH (X(Rn) mode): @0x0236 value
+mem0234 = 0000 PUSH (X(Rn) mode): @0x0234 value
+mem0232 = 0000 PUSH (X(Rn) mode): @0x0232 value
+mem0230 = 0000 PUSH (X(Rn) mode): @0x0230 value
+# Addressing mode: EDE
+at 5000
+r1 = 0242 PUSH (EDE mode): SP value
+mem0250 = 1234 PUSH (EDE mode): @0x0250 value
+mem024e = 5678 PUSH (EDE mode): @0x024E value
+mem024c = 9abc PUSH (EDE mode): @0x024c value
+mem024a = def0 PUSH (EDE mode): @0x024a value
+mem0248 = 0fed PUSH (EDE mode): @0x0248 value
+mem0246 = cba9 PUSH (EDE mode): @0x0246 value
+mem0244 = 8765 PUSH (EDE mode): @0x0244 value
+mem0242 = 4321 PUSH (EDE mode): @0x0242 value
+mem0240 = 0000 PUSH (EDE mode): @0x0240 value
+mem023e = 0000 PUSH (EDE mode): @0x023e value
+mem023c = 0000 PUSH (EDE mode): @0x023c value
+mem023a = 0000 PUSH (EDE mode): @0x023a value
+mem0238 = 0000 PUSH (EDE mode): @0x0238 value
+mem0236 = 0000 PUSH (EDE mode): @0x0236 value
+mem0234 = 0000 PUSH (EDE mode): @0x0234 value
+mem0232 = 0000 PUSH (EDE mode): @0x0232 value
+mem0230 = 0000 PUSH (EDE mode): @0x0230 value
+# Addressing mode: &EDE
+at 6000
+r1 = 023e PUSH (&EDE mode): SP value
+mem0250 = 1234 PUSH (&EDE mode): @0x0250 value
+mem024e = 5678 PUSH (&EDE mode): @0x024E value
+mem024c = 9abc PUSH (&EDE mode): @0x024c value
+mem024a = def0 PUSH (&EDE mode): @0x024a value
+mem0248 = 0fed PUSH (&EDE mode): @0x0248 value
+mem0246 = cba9 PUSH (&EDE mode): @0x0246 value
+mem0244 = 8765 PUSH (&EDE mode): @0x0244 value
+mem0242 = 4321 PUSH (&EDE mode): @0x0242 value
+mem0240 = 1f2e PUSH (&EDE mode): @0x0240 value
+mem023e = 3d4c PUSH (&EDE mode): @0x023e value
+mem023c = 0000 PUSH (&EDE mode): @0x023c value
+mem023a = 0000 PUSH (&EDE mode): @0x023a value
+mem0238 = 0000 PUSH (&EDE mode): @0x0238 value
+mem0236 = 0000 PUSH (&EDE mode): @0x0236 value
+mem0234 = 0000 PUSH (&EDE mode): @0x0234 value
+mem0232 = 0000 PUSH (&EDE mode): @0x0232 value
+mem0230 = 0000 PUSH (&EDE mode): @0x0230 value

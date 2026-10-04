@@ -1,0 +1,28 @@
+# BIT (WORD MODE)
+at 1000
+r5 = 8888 BIT Test
+r6 = 9999 BIT Test
+# BIT.B (BYTE MODE)
+at 2000
+r5 = 8888 BIT.B Test
+r6 = 9999 BIT.B Test
+# BIT (WORD MODE): Check Flags
+at 3000
+r2 = 0001 BIT FLAG: Flag   check error: V=0, N=0, Z=0, C=1
+r5 = 0666 BIT FLAG: Result check error: V=0, N=0, Z=0, C=1
+at 3001
+r2 = 0005 BIT FLAG: Flag   check error: V=0, N=1, Z=0, C=1
+r5 = 8555 BIT FLAG: Result check error: V=0, N=1, Z=0, C=1
+at 3002
+r2 = 0002 BIT FLAG: Flag   check error: V=0, N=0, Z=1, C=0
+r5 = 0555 BIT FLAG: Result check error: V=0, N=0, Z=1, C=0
+# BIT.B (BYTE MODE): Check Flags
+at 4000
+r2 = 0001 BIT.B FLAG: Flag   check error: V=0, N=0, Z=0, C=1
+r5 = 8006 BIT.B FLAG: Result check error: V=0, N=0, Z=0, C=1
+at 4001
+r2 = 0005 BIT.B FLAG: Flag   check error: V=0, N=1, Z=0, C=1
+r5 = 0085 BIT.B FLAG: Result check error: V=0, N=1, Z=0, C=1
+at 4002
+r2 = 0002 BIT.B FLAG: Flag   check error: V=0, N=0, Z=1, C=0
+r5 = 77aa BIT.B FLAG: Result check error: V=0, N=0, Z=1, C=0

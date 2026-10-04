@@ -31,7 +31,11 @@ void reg_write(Cpu *cpu, unsigned reg, uint16_t val, bool byte)
 {
     if (reg == 3)
         return;
-    cpu->r[reg] = byte ? (val & 0xFF) : val;
+    if (byte)
+        val &= 0xFF;
+    if (reg == 2)
+        val &= SR_MASK;
+    cpu->r[reg] = val;
 }
 
 void cpu_step(Emulator *emu)
@@ -45,23 +49,23 @@ void cpu_step(Emulator *emu)
 
         if (emu->trace)
             trace_begin(emu);
-        decode(emu, fetch(emu), NULL);
+        unsigned cycles = decode(emu, fetch(emu), NULL);
         if (emu->stop == EMU_ILLEGAL) {
             cpu->pc = pc;
             return;
         }
-        cpu->cycles += 4; /* average; exact counts in Plan step 9 */
+        cpu->cycles += cycles;
         if (emu->trace)
             trace_end(emu);
     } else {
-        cpu->cycles += 1;
+        cpu->cycles += 1; /* while CPUOFF, one cycle per step */
     }
 
     if (emu->trace)
         trace_snapshot(emu);
     irq = handle_interrupts(emu);
     if (irq >= 0) {
-        cpu->cycles += 6;
+        cpu->cycles += 6; /* interrupt acceptance */
         if (emu->trace)
             trace_interrupt(emu, irq);
     }

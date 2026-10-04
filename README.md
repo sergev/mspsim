@@ -15,7 +15,7 @@ You need CMake 3.16 or newer and a C11 compiler (gcc or clang). The top-level Ma
 | Command | What it does |
 |---|---|
 | `make` | Configure `build/` (RelWithDebInfo) on first use, then build everything |
-| `make test` | Build, then run the unit and command-line tests with ctest |
+| `make test` | Build, then run the unit, instruction-set and command-line tests with ctest |
 | `make install` | Install `mspsim` into `~/.local/bin`, or into `/usr/local/bin` if `~/.local` doesn't exist |
 | `make debug` | Reconfigure `build/` for a Debug build; follow with `make` |
 | `make format` | Reformat all C sources with clang-format (uses `.clang-format`) |
@@ -28,6 +28,8 @@ cmake -B build
 cmake --build build
 ctest --test-dir build
 ```
+
+The tests include the instruction tests of the [openMSP430](https://opencores.org/projects/openmsp430) project (LGPL-2.1, in `test/openmsp430/`), assembled by a small assembler in `test/asm.c`. When `msp430-elf-gcc` is installed, C programs in `test/firmware/` are compiled and run too; set `MSP430_FLAGS` (default `-mmcu=msp430g2553 -Os`) if the compiler needs `-I`/`-L` for TI's device support files.
 
 ## Run
 
@@ -44,6 +46,8 @@ mspsim [options] firmware
 The firmware is an ELF file (as produced by `msp430-elf-gcc`) or an Intel HEX file; the format is detected from the contents. A raw binary image needs `-b ADDR`. Execution starts at the reset vector (0xFFFE). If the vector is erased (0xFFFF), it starts at the ELF entry point, the HEX start address, or the `-b` address. ELF symbols can be used in debugger commands (`break main`), and the disassembler and trace show them.
 
 UART output goes to stdout and diagnostics to stderr, so `mspsim -q fw.bin > out.txt` captures just what the program prints.
+
+Cycles are counted per instruction as in the MSP430x2xx family user's guide (SLAU144), and the total is reported when the run ends.
 
 The run ends when the program writes to the stop register, hits an illegal instruction, reaches the `-n` cycle limit, or goes to sleep (`CPUOFF`) with no way to wake up. The exit status says which:
 

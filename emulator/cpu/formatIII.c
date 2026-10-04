@@ -33,7 +33,7 @@
 #include "cpu/decoder.h"
 #include "cpu/registers.h"
 
-void decode_formatIII(Emulator *emu, uint16_t instruction, Listing *l)
+unsigned decode_formatIII(Emulator *emu, uint16_t instruction, Listing *l)
 {
     static const char *const names[] = { "jnz", "jz", "jnc", "jc", "jn", "jge", "jl", "jmp" };
     Cpu *cpu                         = emu->cpu;
@@ -50,7 +50,7 @@ void decode_formatIII(Emulator *emu, uint16_t instruction, Listing *l)
         snprintf(l->mnemonic, sizeof l->mnemonic, "%s", names[condition]);
         snprintf(l->ops, sizeof l->ops, "0x%04x", (uint16_t)(cpu->pc + signed_offset));
         listing_target(l, cpu->pc + signed_offset, true);
-        return;
+        return 0;
     }
 
     bool n = cpu->sr & SR_N, v = cpu->sr & SR_V;
@@ -86,4 +86,5 @@ void decode_formatIII(Emulator *emu, uint16_t instruction, Listing *l)
     /* PC + 2 × offset → PC */
     if (taken)
         cpu->pc += signed_offset;
+    return 2; /* taken or not */
 }

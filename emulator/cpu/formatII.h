@@ -25,6 +25,7 @@
 #include "cpu/decoder.h"
 #include "emulator.h"
 
-void decode_formatII(Emulator *emu, uint16_t instruction, Listing *l);
+/* Returns the cycle count; see decode(). */
+unsigned decode_formatII(Emulator *emu, uint16_t instruction, Listing *l);
 
 #endif

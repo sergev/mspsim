@@ -1,0 +1,165 @@
+# Check reset values
+r2 = 0000 R2  reset value
+r4 = 0000 R4  reset value
+r5 = 0000 R5  reset value
+r6 = 0000 R6  reset value
+r7 = 0000 R7  reset value
+r8 = 0000 R8  reset value
+r9 = 0000 R9  reset value
+r10 = 0000 R10 reset value
+r11 = 0000 R11 reset value
+r12 = 0000 R12 reset value
+r13 = 0000 R13 reset value
+r14 = 0000 R14 reset value
+r15 = 0000 R15 reset value
+# Make sure initialization worked fine
+at 1000
+r2 = 0022 R2  initialization
+r4 = 4444 R4  initialization
+r5 = 5555 R5  initialization
+r6 = 6666 R6  initialization
+r7 = 7777 R7  initialization
+r8 = 8888 R8  initialization
+r9 = 9999 R9  initialization
+r10 = aaaa R10 initialization
+r11 = bbbb R11 initialization
+r12 = cccc R12 initialization
+r13 = dddd R13 initialization
+r14 = eeee R14 initialization
+# ADD: Check when source is Rn
+at 2000
+r5 = 9999 ADD Rn Rm
+r4 != 1234 ADD Rn PC
+mem0210 = 5555 ADD Rn x(Rm)
+mem0212 = 9abc ADD Rn EDE
+mem0214 = 6789 ADD Rn &EDE
+# ADD: Check when source is @Rn
+at 3000
+r5 = 7777 ADD @Rn Rm
+r4 != 0000 ADD @Rn PC
+mem0210 = 6666 ADD @Rn x(Rm)
+mem0212 = ed2e ADD @Rn EDE
+mem0214 = 4653 ADD @Rn &EDE
+# ADD: Check when source is @Rn+
+at 4000
+r4 = 0202 ADD @Rn+ Rm
+r5 = aaaa ADD @Rn+ Rm
+r6 = 0206 ADD @Rn+ PC
+r7 = 0210 ADD @Rn+ x(Rm)
+mem0210 = 6666 ADD @Rn+ x(Rm)
+r8 = 0208 ADD @Rn+ EDE
+mem0212 = ed2e ADD @Rn+ EDE
+r9 = 0204 ADD @Rn+ &EDE
+mem0214 = 4653 ADD @Rn+ &EDE
+# ADD: Check when source is #N
+at 5000
+r4 = 4444 ADD #N  Rm
+r5 = 0000 ADD #N  PC
+mem0230 = ae8c ADD #N  x(Rm)
+mem0210 = 5d50 ADD #N  EDE
+mem0206 = 6ea1 ADD #N  &EDE
+# ADD: Check when source is x(Rn)
+at 6000
+r5 = 957b ADD x(Rn) Rm
+r6 != 0000 ADD x(Rn) PC
+mem0214 = 5776 ADD x(Rn) x(Rm)
+mem0220 = 937b ADD x(Rn) EDE
+mem0208 = ace4 ADD x(Rn) &EDE
+# ADD: Check when source is EDE
+at 7000
+r4 = 06f7 ADD EDE Rm
+r6 != 0000 ADD EDE PC
+mem0214 = 0946 ADD EDE x(Rm)
+mem0216 = b933 ADD EDE EDE
+mem0212 = 2ab2 ADD EDE &EDE
+# ADD: Check when source is &EDE
+at 8000
+r4 = 66f5 ADD &EDE Rm
+r6 != 0000 ADD &EDE PC
+mem0214 = 82d1 ADD &EDE x(Rm)
+mem0218 = ca4e ADD &EDE EDE
+mem0202 = 1338 ADD &EDE &EDE
+# ADD: Check when source is CONST
+at 9000
+r4 = 4444 ADD #+0 Rm
+r5 = 5556 ADD #+1 Rm
+r6 = 6668 ADD #+2 Rm
+r7 = 777b ADD #+4 Rm
+r8 = 8890 ADD #+8 Rm
+r9 = 9998 ADD #-1 Rm
+r11 = 1234 ADD #+4 PC
+mem0210 = 4444 ADD #+0 x(Rm)
+mem0212 = 5556 ADD #+1 x(Rm)
+mem0214 = 6668 ADD #+2 x(Rm)
+mem0216 = 777b ADD #+4 x(Rm)
+mem0218 = 8890 ADD #+8 x(Rm)
+mem021a = 9998 ADD #-1 x(Rm)
+mem0220 = 4444 ADD #+0 EDE
+mem0222 = 5556 ADD #+1 EDE
+mem0224 = 6668 ADD #+2 EDE
+mem0226 = 777b ADD #+4 EDE
+mem0228 = 8890 ADD #+8 EDE
+mem022a = 9998 ADD #-1 EDE
+mem0230 = 4444 ADD #+0 &EDE
+mem0232 = 5556 ADD #+1 &EDE
+mem0234 = 6668 ADD #+2 &EDE
+mem0236 = 777b ADD #+4 &EDE
+mem0238 = 8890 ADD #+8 &EDE
+mem023a = 9998 ADD #-1 &EDE
+# ADD: Check Flags
+at a000
+r2 = 0000 ADD FLAG: Flag   check error: V=0, N=0, Z=0, C=0
+r5 = 0999 ADD FLAG: Result check error: V=0, N=0, Z=0, C=0
+at a001
+r2 = 0001 ADD FLAG: Flag   check error: V=0, N=0, Z=0, C=1
+r5 = 0001 ADD FLAG: Result check error: V=0, N=0, Z=0, C=1
+at a002
+r2 = 0002 ADD FLAG: Flag   check error: V=0, N=0, Z=1, C=0
+r5 = 0000 ADD FLAG: Result check error: V=0, N=0, Z=1, C=0
+at a003
+r2 = 0004 ADD FLAG: Flag   check error: V=0, N=1, Z=0, C=0
+r5 = ff10 ADD FLAG: Result check error: V=0, N=1, Z=0, C=0
+at a004
+r2 = 0104 ADD FLAG: Flag   check error: V=1, N=1, Z=0, C=0
+r5 = 800f ADD FLAG: Result check error: V=1, N=1, Z=0, C=0
+at a005
+r2 = 0101 ADD FLAG: Flag   check error: V=1, N=0, Z=0, C=1
+r5 = 7f00 ADD FLAG: Result check error: V=1, N=0, Z=0, C=1
+# ---------------- TEST WHEN SOURCE IS CONSTANT IN BYTE MODE ------ */
+# #
+# # NOTE: The following section would not fit in the smallest ROM
+# #       configuration for the "two-op_add-b.v" pattern.
+# #       It is therefore executed here.
+# #
+at b000
+mem0250 = aa44 ADD.B #+0 &EDE
+mem0252 = aa56 ADD.B #+1 &EDE
+mem0254 = aa68 ADD.B #+2 &EDE
+mem0256 = aa7b ADD.B #+4 &EDE
+mem0258 = aa3d ADD.B #+8 &EDE
+mem025a = aa98 ADD.B #-1 &EDE
+mem025c = aa55 ADD.B #+0 &EDE
+mem025e = bc55 ADD.B #+1 &EDE
+mem0260 = ce55 ADD.B #+2 &EDE
+mem0262 = e155 ADD.B #+4 &EDE
+mem0264 = f655 ADD.B #+8 &EDE
+mem0266 = 3255 ADD.B #-1 &EDE
+# ADD.B: Check Flags
+at c000
+r2 = 0000 ADD.B FLAG: Flag   check error: V=0, N=0, Z=0, C=0
+r5 = 0009 ADD.B FLAG: Result check error: V=0, N=0, Z=0, C=0
+at c001
+r2 = 0001 ADD.B FLAG: Flag   check error: V=0, N=0, Z=0, C=1
+r5 = 0001 ADD.B FLAG: Result check error: V=0, N=0, Z=0, C=1
+at c002
+r2 = 0002 ADD.B FLAG: Flag   check error: V=0, N=0, Z=1, C=0
+r5 = 0000 ADD.B FLAG: Result check error: V=0, N=0, Z=1, C=0
+at c003
+r2 = 0004 ADD.B FLAG: Flag   check error: V=0, N=1, Z=0, C=0
+r5 = 00f3 ADD.B FLAG: Result check error: V=0, N=1, Z=0, C=0
+at c004
+r2 = 0104 ADD.B FLAG: Flag   check error: V=1, N=1, Z=0, C=0
+r5 = 008f ADD.B FLAG: Result check error: V=1, N=1, Z=0, C=0
+at c005
+r2 = 0101 ADD.B FLAG: Flag   check error: V=1, N=0, Z=0, C=1
+r5 = 007f ADD.B FLAG: Result check error: V=1, N=0, Z=0, C=1

@@ -1,0 +1,186 @@
+# Check reset values
+r2 = 0000 R2  reset value
+r4 = 0000 R4  reset value
+r5 = 0000 R5  reset value
+r6 = 0000 R6  reset value
+r7 = 0000 R7  reset value
+r8 = 0000 R8  reset value
+r9 = 0000 R9  reset value
+r10 = 0000 R10 reset value
+r11 = 0000 R11 reset value
+r12 = 0000 R12 reset value
+r13 = 0000 R13 reset value
+r14 = 0000 R14 reset value
+r15 = 0000 R15 reset value
+# Make sure initialization worked fine
+at 1000
+r2 = 0022 R2  initialization
+r4 = 4444 R4  initialization
+r5 = 5555 R5  initialization
+r6 = 6666 R6  initialization
+r7 = 7777 R7  initialization
+r8 = 8888 R8  initialization
+r9 = 9999 R9  initialization
+r10 = aaaa R10 initialization
+r11 = bbbb R11 initialization
+r12 = cccc R12 initialization
+r13 = dddd R13 initialization
+r14 = eeee R14 initialization
+# ADD.B: Check when source is Rn
+at 2000
+r4 = 00cc ADD.B Rn Rm
+mem0210 = aaef ADD.B Rn x(Rm)
+mem0212 = cd66 ADD.B Rn x(Rm)
+mem0214 = 11ef ADD.B Rn EDE
+mem0216 = abaa ADD.B Rn EDE
+mem0218 = 77b6 ADD.B Rn &EDE
+mem021a = 7f44 ADD.B Rn &EDE
+# ADD.B: Check when source is @Rn
+at 3000
+r5 = 0032 ADD.B @Rn Rm
+r6 = 0021 ADD.B @Rn Rm
+mem0210 = 55cc ADD.B @Rn x(Rm)
+mem0212 = aabb ADD.B @Rn x(Rm)
+mem0214 = 5600 ADD.B @Rn x(Rm)
+mem0216 = dcba ADD.B @Rn x(Rm)
+mem0218 = 1198 ADD.B @Rn EDE
+mem021a = eedd ADD.B @Rn EDE
+mem021c = 1dbf ADD.B @Rn EDE
+mem021e = d02e ADD.B @Rn EDE
+mem0220 = 2210 ADD.B @Rn &EDE
+mem0222 = 88cc ADD.B @Rn &EDE
+mem0224 = 2c39 ADD.B @Rn &EDE
+mem0226 = 4a3d ADD.B @Rn &EDE
+# ADD.B: Check when source is @Rn+
+at 4000
+r4 = 0211 ADD.B @Rn+ Rm
+r5 = 0052 ADD.B @Rn+ Rm
+r6 = 0214 ADD.B @Rn+ Rm
+r7 = 0035 ADD.B @Rn+ Rm
+mem0210 = aadd ADD.B @Rn+ x(Rm)
+mem0212 = 9966 ADD.B @Rn+ x(Rm)
+mem0214 = 5ac0 ADD.B @Rn+ x(Rm)
+mem0216 = 1cb6 ADD.B @Rn+ x(Rm)
+r9 = 0208 ADD.B @Rn+ x(Rm)
+mem0218 = 11cc ADD.B @Rn+ EDE 1
+mem021a = baff ADD.B @Rn+ EDE 2
+mem021c = 1e0c ADD.B @Rn+ EDE 3
+mem021e = e0f2 ADD.B @Rn+ EDE 4
+r10 = 0208 ADD.B @Rn+ EDE 5
+mem0220 = 5599 ADD.B @Rn+ &EDE
+mem0222 = 21dd ADD.B @Rn+ &EDE
+mem0224 = 5cd3 ADD.B @Rn+ &EDE
+mem0226 = 4dd6 ADD.B @Rn+ &EDE
+r11 = 0208 ADD.B @Rn+ &EDE
+# ADD.B: Check when source is #N
+at 5000
+r4 = 008a ADD.B #N  Rm
+mem0210 = aabb ADD.B #N  x(Rm)
+mem0212 = 9944 ADD.B #N  x(Rm)
+mem0214 = a9ba ADD.B #N  x(Rm)
+mem0216 = d15a ADD.B #N  x(Rm)
+mem0218 = 11cc ADD.B #N  EDE
+mem021a = bacc ADD.B #N  EDE
+mem021c = 1e1a ADD.B #N  EDE
+mem021e = f2c2 ADD.B #N  EDE
+mem0220 = aabb ADD.B #N  &EDE
+mem0222 = 77ee ADD.B #N  &EDE
+mem0224 = a205 ADD.B #N  &EDE
+mem0226 = c3e8 ADD.B #N  &EDE
+# ADD.B: Check when source is x(Rn)
+at 6000
+r5 = 00cb ADD.B x(Rn) Rm
+r6 = 0098 ADD.B x(Rn) Rm
+mem0210 = aa33 ADD.B x(Rn) x(Rm)
+mem0212 = 6655 ADD.B x(Rn) x(Rm)
+mem0214 = a26a ADD.B x(Rn) x(Rm)
+mem0216 = a151 ADD.B x(Rn) x(Rm)
+mem0218 = 33ee ADD.B x(Rn) EDE
+mem021a = 43cc ADD.B x(Rn) EDE
+mem021c = 3729 ADD.B x(Rn) EDE
+mem021e = 72c4 ADD.B x(Rn) EDE
+mem0220 = 0044 ADD.B x(Rn) &EDE
+mem0222 = 32cc ADD.B x(Rn) &EDE
+mem0224 = 0d82 ADD.B x(Rn) &EDE
+mem0226 = 58c1 ADD.B x(Rn) &EDE
+# ADD.B: Check when source is EDE
+at 7000
+r5 = 0076 ADD.B EDE  Rm
+r6 = 00e9 ADD.B EDE  Rm
+mem0210 = aadd ADD.B EDE  x(Rm)
+mem0212 = aa55 ADD.B EDE  x(Rm)
+mem0214 = a60a ADD.B EDE  x(Rm)
+mem0216 = e15b ADD.B EDE  x(Rm)
+mem0218 = 11cc ADD.B EDE  EDE
+mem021a = baff ADD.B EDE  EDE
+mem021c = 1e0c ADD.B EDE  EDE
+mem021e = e0f2 ADD.B EDE  EDE
+mem0220 = 113a ADD.B EDE  &EDE
+mem0222 = 21dd ADD.B EDE  &EDE
+mem0224 = 2ca3 ADD.B EDE  &EDE
+mem0226 = 4ad3 ADD.B EDE  &EDE
+# ADD.B: Check when source is &EDE
+at 8000
+r5 = 00aa ADD.B &EDE  Rm
+r6 = 00dd ADD.B &EDE  Rm
+mem0210 = aadd ADD.B &EDE  x(Rm)
+mem0212 = 10dd ADD.B &EDE  x(Rm)
+mem0214 = ac12 ADD.B &EDE  x(Rm)
+mem0216 = 41db ADD.B &EDE  x(Rm)
+mem0218 = 11cc ADD.B &EDE  EDE
+mem021a = 3277 ADD.B &EDE  EDE
+mem021c = 1604 ADD.B &EDE  EDE
+mem021e = 6072 ADD.B &EDE  EDE
+mem0220 = aaee ADD.B &EDE  &EDE
+mem0222 = 32ee ADD.B &EDE  &EDE
+mem0224 = ad24 ADD.B &EDE  &EDE
+mem0226 = 62eb ADD.B &EDE  &EDE
+# ADD.B: Check when source is CONST
+at 9000
+r4 = 0044 ADD.B #+0 Rm
+r5 = 0056 ADD.B #+1 Rm
+r6 = 0068 ADD.B #+2 Rm
+r7 = 007b ADD.B #+4 Rm
+r8 = 0090 ADD.B #+8 Rm
+r9 = 0098 ADD.B #-1 Rm
+mem0210 = aa44 ADD.B #+0 x(Rm)
+mem0212 = aa56 ADD.B #+1 x(Rm)
+mem0214 = aa68 ADD.B #+2 x(Rm)
+mem0216 = aa7b ADD.B #+4 x(Rm)
+mem0218 = aa3d ADD.B #+8 x(Rm)
+mem021a = aa98 ADD.B #-1 x(Rm)
+mem021c = aa55 ADD.B #+0 x(Rm)
+mem021e = bc55 ADD.B #+1 x(Rm)
+mem0220 = ce55 ADD.B #+2 x(Rm)
+mem0222 = e155 ADD.B #+4 x(Rm)
+mem0224 = f655 ADD.B #+8 x(Rm)
+mem0226 = 3255 ADD.B #-1 x(Rm)
+mem0230 = aa44 ADD.B #+0 EDE
+mem0232 = aa56 ADD.B #+1 EDE
+mem0234 = aa68 ADD.B #+2 EDE
+mem0236 = aa7b ADD.B #+4 EDE
+mem0238 = aa3d ADD.B #+8 EDE
+mem023a = aa98 ADD.B #-1 EDE
+mem023c = aa55 ADD.B #+0 EDE
+mem023e = bc55 ADD.B #+1 EDE
+mem0240 = ce55 ADD.B #+2 EDE
+mem0242 = e155 ADD.B #+4 EDE
+mem0244 = f655 ADD.B #+8 EDE
+mem0246 = 3255 ADD.B #-1 EDE
+# #
+# # NOTE: The following section would not fit in the smallest ROM
+# #       configuration. Therefore, it is executed at the end of
+# #       the "two-op_add.v" pattern.
+# #
+# if (mem250 !==16'haa44) tb_error("====== ADD.B #+0 &EDE =====");
+# if (mem252 !==16'haa56) tb_error("====== ADD.B #+1 &EDE =====");
+# if (mem254 !==16'haa68) tb_error("====== ADD.B #+2 &EDE =====");
+# if (mem256 !==16'haa7b) tb_error("====== ADD.B #+4 &EDE =====");
+# if (mem258 !==16'haa3d) tb_error("====== ADD.B #+8 &EDE =====");
+# if (mem25A !==16'haa98) tb_error("====== ADD.B #-1 &EDE =====");
+# if (mem25C !==16'haa55) tb_error("====== ADD.B #+0 &EDE =====");
+# if (mem25E !==16'hbc55) tb_error("====== ADD.B #+1 &EDE =====");
+# if (mem260 !==16'hce55) tb_error("====== ADD.B #+2 &EDE =====");
+# if (mem262 !==16'he155) tb_error("====== ADD.B #+4 &EDE =====");
+# if (mem264 !==16'hf655) tb_error("====== ADD.B #+8 &EDE =====");
+# if (mem266 !==16'h3255) tb_error("====== ADD.B #-1 &EDE =====");

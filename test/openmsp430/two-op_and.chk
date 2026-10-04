@@ -1,0 +1,28 @@
+# AND (WORD MODE)
+at 1000
+r5 = 1111 AND Test
+r6 = 4444 AND Test
+# AND.B (BYTE MODE)
+at 2000
+r5 = 0011 AND.B Test
+r6 = 0044 AND.B Test
+# AND (WORD MODE): Check Flags
+at 3000
+r2 = 0001 AND FLAG: Flag   check error: V=0, N=0, Z=0, C=1
+r5 = 0111 AND FLAG: Result check error: V=0, N=0, Z=0, C=1
+at 3001
+r2 = 0002 AND FLAG: Flag   check error: V=0, N=0, Z=1, C=0
+r5 = 0000 AND FLAG: Result check error: V=0, N=0, Z=1, C=0
+at 3002
+r2 = 0005 AND FLAG: Flag   check error: V=0, N=1, Z=0, C=1
+r5 = 8111 AND FLAG: Result check error: V=0, N=1, Z=0, C=1
+# AND.B (BYTE MODE): Check Flags
+at 4000
+r2 = 0001 AND.B FLAG: Flag   check error: V=0, N=0, Z=0, C=1
+r5 = 0001 AND.B FLAG: Result check error: V=0, N=0, Z=0, C=1
+at 4001
+r2 = 0002 AND.B FLAG: Flag   check error: V=0, N=0, Z=1, C=0
+r5 = 0000 AND.B FLAG: Result check error: V=0, N=0, Z=1, C=0
+at 4002
+r2 = 0005 AND.B FLAG: Flag   check error: V=0, N=1, Z=0, C=1
+r5 = 0081 AND.B FLAG: Result check error: V=0, N=1, Z=0, C=1

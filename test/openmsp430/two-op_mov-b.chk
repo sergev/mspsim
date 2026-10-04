@@ -1,0 +1,186 @@
+# Check reset values
+r2 = 0000 R2  reset value
+r4 = 0000 R4  reset value
+r5 = 0000 R5  reset value
+r6 = 0000 R6  reset value
+r7 = 0000 R7  reset value
+r8 = 0000 R8  reset value
+r9 = 0000 R9  reset value
+r10 = 0000 R10 reset value
+r11 = 0000 R11 reset value
+r12 = 0000 R12 reset value
+r13 = 0000 R13 reset value
+r14 = 0000 R14 reset value
+r15 = 0000 R15 reset value
+# Make sure initialization worked fine
+at 1000
+r2 = 0022 R2  initialization
+r4 = 4444 R4  initialization
+r5 = 5555 R5  initialization
+r6 = 6666 R6  initialization
+r7 = 7777 R7  initialization
+r8 = 8888 R8  initialization
+r9 = 9999 R9  initialization
+r10 = aaaa R10 initialization
+r11 = bbbb R11 initialization
+r12 = cccc R12 initialization
+r13 = dddd R13 initialization
+r14 = eeee R14 initialization
+# MOV.B: Check when source is Rn
+at 2000
+r4 = 0055 MOV.B Rn Rm
+mem0210 = aa34 MOV.B Rn x(Rm)
+mem0212 = 7855 MOV.B Rn x(Rm)
+mem0214 = 11cd MOV.B Rn EDE
+mem0216 = 1299 MOV.B Rn EDE
+mem0218 = 772e MOV.B Rn &EDE
+mem021a = 4c33 MOV.B Rn &EDE
+# MOV.B: Check when source is @Rn
+at 3000
+r5 = 0033 MOV.B @Rn Rm
+r6 = 0044 MOV.B @Rn Rm
+mem0210 = aa22 MOV.B @Rn x(Rm)
+mem0212 = 4455 MOV.B @Rn x(Rm)
+mem0214 = 5a55 MOV.B @Rn x(Rm)
+mem0216 = 77a5 MOV.B @Rn x(Rm)
+mem0218 = 11aa MOV.B @Rn EDE
+mem021a = ccee MOV.B @Rn EDE
+mem021c = 1edd MOV.B @Rn EDE
+mem021e = ffe1 MOV.B @Rn EDE
+mem0220 = 2233 MOV.B @Rn &EDE
+mem0222 = 55dd MOV.B @Rn &EDE
+mem0224 = 2d66 MOV.B @Rn &EDE
+mem0226 = 88d2 MOV.B @Rn &EDE
+# MOV.B: Check when source is @Rn+
+at 4000
+r4 = 0211 MOV.B @Rn+ Rm
+r5 = 0033 MOV.B @Rn+ Rm
+r6 = 0214 MOV.B @Rn+ Rm
+r7 = 0044 MOV.B @Rn+ Rm
+mem0210 = aa22 MOV.B @Rn+ x(Rm)
+mem0212 = 4455 MOV.B @Rn+ x(Rm)
+mem0214 = 5a55 MOV.B @Rn+ x(Rm)
+mem0216 = 77a5 MOV.B @Rn+ x(Rm)
+r9 = 0208 MOV.B @Rn+ x(Rm)
+mem0218 = 11aa MOV.B @Rn+ EDE
+mem021a = ccee MOV.B @Rn+ EDE
+mem021c = 1edd MOV.B @Rn+ EDE
+mem021e = ffe1 MOV.B @Rn+ EDE
+r10 = 0208 MOV.B @Rn+ EDE
+mem0220 = 2233 MOV.B @Rn+ &EDE
+mem0222 = 55dd MOV.B @Rn+ &EDE
+mem0224 = 2d66 MOV.B @Rn+ &EDE
+mem0226 = 88d2 MOV.B @Rn+ &EDE
+r11 = 0208 MOV.B @Rn+ &EDE
+# MOV.B: Check when source is #N
+at 5000
+r4 = 0034 MOV.B #N  Rm
+mem0210 = aa22 MOV.B #N  x(Rm)
+mem0212 = 4455 MOV.B #N  x(Rm)
+mem0214 = 5a66 MOV.B #N  x(Rm)
+mem0216 = 88a5 MOV.B #N  x(Rm)
+mem0218 = 11aa MOV.B #N  EDE
+mem021a = ccee MOV.B #N  EDE
+mem021c = 1eee MOV.B #N  EDE
+mem021e = 11e1 MOV.B #N  EDE
+mem0220 = aa33 MOV.B #N  &EDE
+mem0222 = 55ee MOV.B #N  &EDE
+mem0224 = ae77 MOV.B #N  &EDE
+mem0226 = 99ea MOV.B #N  &EDE
+# MOV.B: Check when source is x(Rn)
+at 6000
+r5 = 0033 MOV.B x(Rn) Rm
+r6 = 0044 MOV.B x(Rn) Rm
+mem0210 = aa22 MOV.B x(Rn) x(Rm)
+mem0212 = 4455 MOV.B x(Rn) x(Rm)
+mem0214 = 5a55 MOV.B x(Rn) x(Rm)
+mem0216 = 77a5 MOV.B x(Rn) x(Rm)
+mem0218 = 11aa MOV.B x(Rn) EDE
+mem021a = ccee MOV.B x(Rn) EDE
+mem021c = 1edd MOV.B x(Rn) EDE
+mem021e = ffe1 MOV.B x(Rn) EDE
+mem0220 = 2233 MOV.B x(Rn) &EDE
+mem0222 = 55dd MOV.B x(Rn) &EDE
+mem0224 = 2d66 MOV.B x(Rn) &EDE
+mem0226 = 88d2 MOV.B x(Rn) &EDE
+# MOV.B: Check when source is EDE
+at 7000
+r5 = 0033 MOV.B EDE  Rm
+r6 = 0044 MOV.B EDE  Rm
+mem0210 = aa22 MOV.B EDE  x(Rm)
+mem0212 = 4455 MOV.B EDE  x(Rm)
+mem0214 = 5a55 MOV.B EDE  x(Rm)
+mem0216 = 77a5 MOV.B EDE  x(Rm)
+mem0218 = 11aa MOV.B EDE  EDE
+mem021a = ccee MOV.B EDE  EDE
+mem021c = 1edd MOV.B EDE  EDE
+mem021e = ffe1 MOV.B EDE  EDE
+mem0220 = 2233 MOV.B EDE  &EDE
+mem0222 = 55dd MOV.B EDE  &EDE
+mem0224 = 2d66 MOV.B EDE  &EDE
+mem0226 = 88d2 MOV.B EDE  &EDE
+# MOV.B: Check when source is &EDE
+at 8000
+r5 = 0033 MOV.B &EDE  Rm
+r6 = 0044 MOV.B &EDE  Rm
+mem0210 = aa22 MOV.B &EDE  x(Rm)
+mem0212 = 4455 MOV.B &EDE  x(Rm)
+mem0214 = 5a55 MOV.B &EDE  x(Rm)
+mem0216 = 77a5 MOV.B &EDE  x(Rm)
+mem0218 = 11aa MOV.B &EDE  EDE
+mem021a = ccee MOV.B &EDE  EDE
+mem021c = 1edd MOV.B &EDE  EDE
+mem021e = ffe1 MOV.B &EDE  EDE
+mem0220 = 2233 MOV.B &EDE  &EDE
+mem0222 = 55dd MOV.B &EDE  &EDE
+mem0224 = 2d66 MOV.B &EDE  &EDE
+mem0226 = 88d2 MOV.B &EDE  &EDE
+# MOV.B: Check when source is CONST
+at 9000
+r4 = 0000 MOV.B #+0 Rm
+r5 = 0001 MOV.B #+1 Rm
+r6 = 0002 MOV.B #+2 Rm
+r7 = 0004 MOV.B #+4 Rm
+r8 = 0008 MOV.B #+8 Rm
+r9 = 00ff MOV.B #-1 Rm
+mem0210 = 4400 MOV.B #+0 x(Rm)
+mem0212 = 5501 MOV.B #+1 x(Rm)
+mem0214 = 6602 MOV.B #+2 x(Rm)
+mem0216 = 7704 MOV.B #+4 x(Rm)
+mem0218 = 3508 MOV.B #+8 x(Rm)
+mem021a = 99ff MOV.B #-1 x(Rm)
+mem021c = 00aa MOV.B #+0 x(Rm)
+mem021e = 01bb MOV.B #+1 x(Rm)
+mem0220 = 02cc MOV.B #+2 x(Rm)
+mem0222 = 04dd MOV.B #+4 x(Rm)
+mem0224 = 08ee MOV.B #+8 x(Rm)
+mem0226 = ff33 MOV.B #-1 x(Rm)
+mem0230 = 4400 MOV.B #+0 EDE
+mem0232 = 5501 MOV.B #+1 EDE
+mem0234 = 6602 MOV.B #+2 EDE
+mem0236 = 7704 MOV.B #+4 EDE
+mem0238 = 3508 MOV.B #+8 EDE
+mem023a = 99ff MOV.B #-1 EDE
+mem023c = 00aa MOV.B #+0 EDE
+mem023e = 01bb MOV.B #+1 EDE
+mem0240 = 02cc MOV.B #+2 EDE
+mem0242 = 04dd MOV.B #+4 EDE
+mem0244 = 08ee MOV.B #+8 EDE
+mem0246 = ff33 MOV.B #-1 EDE
+# #
+# # NOTE: The following section would not fit in the smallest ROM
+# #       configuration. Therefore, it is executed at the end of
+# #       the "two-op_mov.v" pattern.
+# #
+# if (mem250 !==16'h4400) tb_error("====== MOV.B #+0 &EDE =====");
+# if (mem252 !==16'h5501) tb_error("====== MOV.B #+1 &EDE =====");
+# if (mem254 !==16'h6602) tb_error("====== MOV.B #+2 &EDE =====");
+# if (mem256 !==16'h7704) tb_error("====== MOV.B #+4 &EDE =====");
+# if (mem258 !==16'h3508) tb_error("====== MOV.B #+8 &EDE =====");
+# if (mem25A !==16'h99ff) tb_error("====== MOV.B #-1 &EDE =====");
+# if (mem25C !==16'h00aa) tb_error("====== MOV.B #+0 &EDE =====");
+# if (mem25E !==16'h01bb) tb_error("====== MOV.B #+1 &EDE =====");
+# if (mem260 !==16'h02cc) tb_error("====== MOV.B #+2 &EDE =====");
+# if (mem262 !==16'h04dd) tb_error("====== MOV.B #+4 &EDE =====");
+# if (mem264 !==16'h08ee) tb_error("====== MOV.B #+8 &EDE =====");
+# if (mem266 !==16'hff33) tb_error("====== MOV.B #-1 &EDE =====");

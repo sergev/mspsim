@@ -48,34 +48,6 @@ uint8_t is_negative(uint16_t result, uint8_t bw_flag)
 }
 
 /**
- * @brief Test if the result of the asm instruction WILL carry
- * @param original_dst_value The original value at the destination
- * @param source_value The value at the source location
- * @param bw_flag Byte or Word flag
- * @return true if zero, false otherwise
- */
-uint8_t is_carried(uint32_t original_dst_value, uint32_t source_value, uint8_t bw_flag)
-{
-    if (bw_flag == EMU_WORD) {
-        if ((65535 - (uint16_t)source_value) < (uint16_t)original_dst_value ||
-            ((original_dst_value + source_value) >> 16) != 0) {
-            return 1;
-        }
-
-        return 0;
-    } else if (bw_flag == EMU_BYTE) {
-        if ((255 - (uint8_t)source_value) < (uint8_t)original_dst_value ||
-            ((original_dst_value + source_value) >> 8) != 0) {
-            return 1;
-        }
-
-        return 0;
-    }
-
-    return false;
-}
-
-/**
  * @brief Test if the result of the asm instruction is overflowed
  * @param source_value The value at the source operand
  * @param destination_value The value at the destination operand

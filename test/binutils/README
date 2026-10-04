@@ -1,0 +1,6 @@
+add.s is from the GNU binutils-gdb simulator test suite,
+sim/testsuite/msp430/ (GNU General Public License 3 or later).
+It runs unchanged: test/asm.c provides the start, pass and fail macros
+of testutils.inc, with pass and fail writing 0 and 1 to the stop register.
+The other tests there need MSP430X (rrux.s) or a hardware multiplier
+(mpyull_hwmult.s), which mspsim does not simulate.

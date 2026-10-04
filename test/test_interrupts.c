@@ -185,15 +185,15 @@ TEST(cycle_counting)
     Emulator *emu = setup();
     Cpu *cpu      = emu->cpu;
 
-    step(emu, 1); /* eint: 4 */
+    step(emu, 1); /* eint: 1 */
     cpu_set_irq(emu, 2, true);
-    step(emu, 1); /* jmp + entry: 4 + 6 */
-    CHECK_EQ(cpu->cycles, 14);
+    step(emu, 1); /* jmp + entry: 2 + 6 */
+    CHECK_EQ(cpu->cycles, 9);
 
     cpu_set_irq(emu, 2, false);
     cpu->sr |= SR_CPUOFF;
     step(emu, 3); /* idle: 1 each */
-    CHECK_EQ(cpu->cycles, 17);
+    CHECK_EQ(cpu->cycles, 12);
 }
 
 int main(int argc, char **argv)

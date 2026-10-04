@@ -1,0 +1,40 @@
+# XOR (WORD MODE)
+at 1000
+r5 = bbbb XOR Test
+r6 = cccc XOR Test
+# XOR.B (BYTE MODE)
+at 2000
+r5 = 00bb XOR.B Test
+r6 = 00cc XOR.B Test
+# XOR (WORD MODE): Check Flags
+at 3000
+r2 = 0001 XOR FLAG: Flag   check error: V=0, N=0, Z=0, C=1
+r5 = 0ccc XOR FLAG: Result check error: V=0, N=0, Z=0, C=1
+at 3001
+r2 = 0002 XOR FLAG: Flag   check error: V=0, N=0, Z=1, C=0
+r5 = 0000 XOR FLAG: Result check error: V=0, N=0, Z=1, C=0
+at 3002
+r2 = 0005 XOR FLAG: Flag   check error: V=0, N=1, Z=0, C=1
+r5 = 8ccc XOR FLAG: Result check error: V=0, N=1, Z=0, C=1
+at 3003
+r2 = 0101 XOR FLAG: Flag   check error: V=1, N=0, Z=0, C=1
+r5 = 0ccc XOR FLAG: Result check error: V=1, N=0, Z=0, C=1
+at 3004
+r2 = 0102 XOR FLAG: Flag   check error: V=1, N=0, Z=1, C=0
+r5 = 0000 XOR FLAG: Result check error: V=1, N=0, Z=1, C=0
+# XOR.B (BYTE MODE): Check Flags
+at 4000
+r2 = 0001 XOR FLAG: Flag   check error: V=0, N=0, Z=0, C=1
+r5 = 000c XOR FLAG: Result check error: V=0, N=0, Z=0, C=1
+at 4001
+r2 = 0002 XOR FLAG: Flag   check error: V=0, N=0, Z=1, C=0
+r5 = 0000 XOR FLAG: Result check error: V=0, N=0, Z=1, C=0
+at 4002
+r2 = 0005 XOR FLAG: Flag   check error: V=0, N=1, Z=0, C=1
+r5 = 008c XOR FLAG: Result check error: V=0, N=1, Z=0, C=1
+at 4003
+r2 = 0101 XOR FLAG: Flag   check error: V=1, N=0, Z=0, C=1
+r5 = 000c XOR FLAG: Result check error: V=1, N=0, Z=0, C=1
+at 4004
+r2 = 0102 XOR FLAG: Flag   check error: V=1, N=0, Z=1, C=0
+r5 = 0000 XOR FLAG: Result check error: V=1, N=0, Z=1, C=0

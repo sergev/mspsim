@@ -35,6 +35,7 @@ enum {
     SR_SCG0   = 0x0040,
     SR_SCG1   = 0x0080,
     SR_V      = 0x0100, /* overflow */
+    SR_MASK   = 0x01FF, /* bits 15-9 are reserved and read as 0 */
 };
 
 typedef struct Cpu {
@@ -60,7 +61,8 @@ static inline void set_flag(Cpu *cpu, uint16_t mask, bool on)
         cpu->sr &= ~mask;
 }
 
-/* Register-mode write: byte writes clear the high byte; R3 discards writes. */
+/* Register-mode write: byte writes clear the high byte; R3 discards writes;
+ * SR keeps only SR_MASK bits. */
 void reg_write(Cpu *cpu, unsigned reg, uint16_t val, bool byte);
 
 void cpu_step(Emulator *emu);

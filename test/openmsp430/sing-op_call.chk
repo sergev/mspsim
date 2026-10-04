@@ -1,0 +1,48 @@
+# Initialization
+at 1000
+r1 = 0252 SP  initialization
+r5 = 0000 R5  initialization
+# Addressing mode: Rn
+at 2000
+r1 = 0252 CALL (Rn mode): SP value
+r5 = 1234 CALL (Rn mode): R5 value
+# Addressing mode: @Rn
+at 3000
+r1 = 0252 CALL (@Rn mode): SP value
+r4 = 0212 CALL (@Rn mode): R4 value
+r5 = 5678 CALL (@Rn mode): R5 value
+# Addressing mode: @Rn+
+at 4000
+r1 = 0252 CALL (@Rn+ mode): SP value
+r4 = 0218 CALL (@Rn+ mode): R4 value
+r5 = 9abc CALL (@Rn+ mode): R5 value
+# Addressing mode: #N
+at 5000
+r1 = 0252 CALL (#N mode): SP value
+r5 = abcd CALL (#N mode): R5 value
+# Addressing mode: X(Rn)
+at 6000
+r1 = 0252 CALL (X(Rn) mode): SP value
+r5 = ef01 CALL (X(Rn) mode): R5 value
+# Addressing mode: EDE
+at 7000
+r1 = 0252 CALL (EDE mode): SP value
+r5 = 2345 CALL (EDE mode): R5 value
+# Addressing mode: &EDE
+at 8000
+r1 = 0252 CALL (&EDE mode): SP value
+r5 = 6789 CALL (&EDE mode): R5 value
+# Addressing mode: SR
+at 9000
+# --> not tested because it would require the cpu to execute from the data memory
+# Addressing mode: @SR
+at a000
+r5 = abcd CALL @SR  : R5 value
+# Addressing mode: @SR+
+at b000
+r5 = 159a CALL @SR+ : R5 value
+# Addressing mode: x(SR)
+at c000
+r5 = 9abc CALL x(SR) : R5 value
+r6 = ef01 CALL x(SR) : R6 value
+r7 = 2345 CALL x(SR) : R7 value

@@ -36,7 +36,7 @@
 #include "cpu/registers.h"
 #include "memory/memory.h"
 
-void decode_formatII(Emulator *emu, uint16_t instruction, Listing *l)
+unsigned decode_formatII(Emulator *emu, uint16_t instruction, Listing *l)
 {
     static const char *const names[] = { "rrc", "swpb", "rra", "sxt", "push", "call", "reti" };
     Cpu *cpu                         = emu->cpu;
@@ -48,7 +48,7 @@ void decode_formatII(Emulator *emu, uint16_t instruction, Listing *l)
     bool byte       = (bw_flag == EMU_BYTE);
 
     Operand op;
-    uint16_t value;
+    uint16_t value, stack = 0;
 
     if (opcode == 6) { /* RETI has no operand */
         if (l)
@@ -59,7 +59,14 @@ void decode_formatII(Emulator *emu, uint16_t instruction, Listing *l)
             snprintf(l->ops, sizeof l->ops, "0x%04x", instruction);
         }
     } else {
+        /* PUSH and CALL decrement SP before computing the operand, so
+         * push sp, @sp and x(sp) see the new value. */
+        if (!l && (opcode == 4 || opcode == 5)) {
+            cpu->sp -= 2;
+            stack = cpu->sp;
+        }
         decode_operand(emu, l, &op, source, as_flag, byte, true);
+        operand_increment(emu, &op);
         /* SWPB, SXT and CALL have no byte form */
         if (l) {
             snprintf(l->mnemonic, sizeof l->mnemonic, "%s%s", names[opcode],
@@ -69,7 +76,20 @@ void decode_formatII(Emulator *emu, uint16_t instruction, Listing *l)
         }
     }
     if (l)
-        return;
+        return 0;
+
+    /* cycles by source class: Rn, @Rn, @Rn+, #N, x(Rn)/EDE/&EDE */
+    static const uint8_t cycles[3][5] = {
+        { 1, 3, 3, 3, 4 }, /* RRC, SWPB, RRA, SXT */
+        { 3, 4, 5, 4, 5 }, /* PUSH */
+        { 4, 4, 5, 5, 5 }, /* CALL */
+    };
+    unsigned count = 0;
+
+    if (opcode < 6)
+        count = cycles[opcode < 4 ? 0 : opcode - 3][cycle_class(source, as_flag)];
+    else if (opcode == 6)
+        count = 5; /* RETI */
 
     switch (opcode) {
         /*  RRC Rotate right through carry
@@ -162,8 +182,7 @@ void decode_formatII(Emulator *emu, uint16_t instruction, Listing *l)
          */
     case 0x4: {
         value = operand_read(emu, &op, byte);
-        cpu->sp -= 2; /* Yes, even for BYTE Instructions */
-        mem_write(emu, cpu->sp, value, byte ? 1 : 2);
+        mem_write(emu, stack, value, byte ? 1 : 2); /* SP steps by 2 even for bytes */
         break;
     }
 
@@ -175,15 +194,14 @@ void decode_formatII(Emulator *emu, uint16_t instruction, Listing *l)
 
     case 0x5: {
         value = operand_read(emu, &op, false);
-        cpu->sp -= 2;
-        mem_write(emu, cpu->sp, cpu->pc, 2);
+        mem_write(emu, stack, cpu->pc, 2);
         cpu->pc = value;
         break;
     }
 
         // # RETI Return from interrupt: Pop SR then pop PC
     case 0x6: {
-        cpu->sr = mem_read(emu, cpu->sp, 2, ACC_DATA);
+        cpu->sr = mem_read(emu, cpu->sp, 2, ACC_DATA) & SR_MASK;
         cpu->sp += 2;
         cpu->pc = mem_read(emu, cpu->sp, 2, ACC_DATA);
         cpu->sp += 2;
@@ -194,4 +212,5 @@ void decode_formatII(Emulator *emu, uint16_t instruction, Listing *l)
     }
 
     } // # End of Switch
+    return count;
 }

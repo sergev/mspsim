@@ -1,0 +1,50 @@
+# ADDC (WORD MODE)
+at 1000
+r5 = 9999 ADD without Carry
+r6 = dddd ADD with Carry
+r7 = 2221 ADDC without Carry
+r8 = 6666 ADDC with Carry
+# ADDC.B (BYTE MODE)
+at 2000
+r5 = 0099 ADD.B  without Carry
+r6 = 00dd ADD.B  with Carry
+r7 = 0021 ADDC.B without Carry
+r8 = 0066 ADDC.B with Carry
+# ADDC (WORD MODE): Check Flags
+at 3000
+r2 = 0000 ADDC FLAG: Flag   check error: V=0, N=0, Z=0, C=0
+r5 = 0999 ADDC FLAG: Result check error: V=0, N=0, Z=0, C=0
+at 3001
+r2 = 0001 ADDC FLAG: Flag   check error: V=0, N=0, Z=0, C=1
+r5 = 0001 ADDC FLAG: Result check error: V=0, N=0, Z=0, C=1
+at 3002
+r2 = 0002 ADDC FLAG: Flag   check error: V=0, N=0, Z=1, C=0
+r5 = 0000 ADDC FLAG: Result check error: V=0, N=0, Z=1, C=0
+at 3003
+r2 = 0004 ADDC FLAG: Flag   check error: V=0, N=1, Z=0, C=0
+r5 = ff10 ADDC FLAG: Result check error: V=0, N=1, Z=0, C=0
+at 3004
+r2 = 0104 ADDC FLAG: Flag   check error: V=1, N=1, Z=0, C=0
+r5 = 800f ADDC FLAG: Result check error: V=1, N=1, Z=0, C=0
+at 3005
+r2 = 0101 ADDC FLAG: Flag   check error: V=1, N=0, Z=0, C=1
+r5 = 7f00 ADDC FLAG: Result check error: V=1, N=0, Z=0, C=1
+# ADDC.B (BYTE MODE): Check Flags
+at 4000
+r2 = 0000 ADDC.B FLAG: Flag   check error: V=0, N=0, Z=0, C=0
+r5 = 0009 ADDC.B FLAG: Result check error: V=0, N=0, Z=0, C=0
+at 4001
+r2 = 0001 ADDC.B FLAG: Flag   check error: V=0, N=0, Z=0, C=1
+r5 = 0001 ADDC.B FLAG: Result check error: V=0, N=0, Z=0, C=1
+at 4002
+r2 = 0002 ADDC.B FLAG: Flag   check error: V=0, N=0, Z=1, C=0
+r5 = 0000 ADDC.B FLAG: Result check error: V=0, N=0, Z=1, C=0
+at 4003
+r2 = 0004 ADDC.B FLAG: Flag   check error: V=0, N=1, Z=0, C=0
+r5 = 00f3 ADDC.B FLAG: Result check error: V=0, N=1, Z=0, C=0
+at 4004
+r2 = 0104 ADDC.B FLAG: Flag   check error: V=1, N=1, Z=0, C=0
+r5 = 008f ADDC.B FLAG: Result check error: V=1, N=1, Z=0, C=0
+at 4005
+r2 = 0101 ADDC.B FLAG: Flag   check error: V=1, N=0, Z=0, C=1
+r5 = 007f ADDC.B FLAG: Result check error: V=1, N=0, Z=0, C=1

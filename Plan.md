@@ -28,11 +28,12 @@ Python, wxPython, the GUI, the websocket server, the LaunchPad-specific peripher
 
 ## Current state
 
-Steps 1–8 are done; the remaining steps keep their original numbers.
+Steps 1–9 are done; the remaining steps keep their original numbers.
 
 - **Build:** CMake builds the `msp430core` library, vendored linenoise, the `mspsim` front-end (`src/main.c`) and the tests (`test/`, run with `ctest`). It is warning-free under `-Wall -Wextra`. Headers are self-contained; the `header_check` target enforces it.
 - **Removed:** the Python/wxPython GUI, the websocket server, MSVC support, and all peripherals (clock module, Timer_A, Port 1, USCI).
-- **CPU core:** the decoder, Format I/II/III instructions and flags work. `cpu->cycles` counts a flat 4 cycles per instruction.
+- **CPU core:** all 27 instructions, flags and addressing modes are tested: the 32 openMSP430 instruction tests pass, plus flag, emulated-instruction and cycle tables in `test/test_cpu.c`. `cpu->cycles` follows the SLAU144 cycle tables; the total is reported on exit.
+- **Tests:** a test assembler (`test/asm.c`) lets tests be written in assembly. Firmware tests in C (`test/firmware/`) run when `msp430-elf-gcc` is available.
 - **Interrupts:** `cpu->irq_pending` is a 16-bit mask of level-sensitive requests, raised with `cpu_set_irq()`. The NMI is edge-triggered. Interrupt entry clears SR except SCG0.
 - **Memory:** `emu->mem`, reached by the CPU only through `mem_read()`/`mem_write()` (`memory/memory.h`), with `ACC_FETCH` for opcode and extension words and `ACC_DATA` for everything else. Instructions use operand descriptors (`decode_operand()`, `operand_read()`, `operand_write()`), so each read-modify-write is one load and one store. Accesses below 0x0200 are dispatched to the device handlers.
 - **Console UART:** `uart/uart.c`, the USCI_A0 subset below, mirrored in `emu->mem`. Input and output go through the front-end hooks `uart_tx`/`uart_rx` (`io.h`). The front-end uses stdout and non-blocking stdin, raw on a tty during a run. Input is polled every 4096 cycles and on each `IFG2` read. Other USCI registers are plain memory.
@@ -51,20 +52,8 @@ Steps 1–8 are done; the remaining steps keep their original numbers.
 - **Debugger:** `exec_cmd()` in `debugger.c` runs one command and returns stay/run/quit. `dis` and the trace share one listing format.
 - **Tracing:** `-t`, `-o FILE` or `trace on` enable `debugger/trace.c`: each instruction, its data loads/stores and its register changes, plus interrupt entries. When tracing is off the bus pays one branch per access. Golden tests are in `test/test_trace.c`.
 - **Loading:** `loader/loader.c` loads ELF32 (`PT_LOAD` at physical addresses, plus the symbol table) and Intel HEX, detected from the contents; raw binaries need `-b ADDR`. PC comes from the reset vector, or from the loader's entry address when the vector is erased. The debugger accepts symbol names as addresses, and `dis` and the trace annotate targets with symbols.
-- **Known ALU bugs, left for Step 9:** `SUB` never clears C; `ADDC`/`SUBC` compute C without the carry-in; `DADD` is a no-op; V on subtraction is suspect.
 
 ## Remaining steps
-
-### Step 9 — CPU correctness and tests
-
-1. **Test harness:** extend the existing `test/` harness with assertions on the trace log (`emu->tracer`, or golden text as in `test/test_trace.c`).
-2. **Coverage:**
-   - all 27 core instructions plus the emulated ones (via the encodings they compile to), in both byte and word modes;
-   - all seven addressing modes, including the constant generators (R2/R3), PC-relative, `@PC+` immediates, and SP auto-increment of 2 for byte operations;
-   - flags, including V on add/sub overflow, `DADD` BCD and `RRC`/`RRA`/`SXT`;
-   - `PUSH`/`CALL`/`RETI` (interrupt entry and `CPUOFF` wake-up are already covered in `test_interrupts.c`).
-3. **Cycle counts:** count cycles per instruction according to the format and addressing-mode table in SLAU144, replacing the "4 cycles average". Report the total on exit.
-4. **Firmware tests:** when `msp430-elf-gcc` is available, add C test programs under `test/firmware/`. They print through the console UART and end via the stop register, and their output is compared with expected text. The CMake step that builds these is skipped when no toolchain is found.
 
 ### Step 10 — Source layout and docs
 
@@ -74,7 +63,7 @@ Steps 1–8 are done; the remaining steps keep their original numbers.
 
 ## Commit order
 
-9 (unit tests, at least the instruction set) → 10.
+10 is the last step.
 
 Each step is one or more commits that leave the tree building.
 

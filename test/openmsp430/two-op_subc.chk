@@ -1,0 +1,40 @@
+# SUBC (WORD MODE)
+at 1000
+r5 = 5554 SUBC without Carry
+r6 = 4444 SUBC with Carry
+# SUBC.B (BYTE MODE)
+at 2000
+r5 = 0054 SUBC.B  without Carry
+r6 = 0044 SUBC.B  with Carry
+# SUBC (WORD MODE): Check Flags
+at 3000
+r2 = 0004 SUBC FLAG: Flag   check error: V=0, N=1, Z=0, C=0
+r5 = fbbb SUBC FLAG: Result check error: V=0, N=1, Z=0, C=0
+at 3001
+r2 = 0001 SUBC FLAG: Flag   check error: V=0, N=0, Z=0, C=1
+r5 = 0110 SUBC FLAG: Result check error: V=0, N=0, Z=0, C=1
+at 3002
+r2 = 0003 SUBC FLAG: Flag   check error: V=0, N=0, Z=1, C=1
+r5 = 0000 SUBC FLAG: Result check error: V=0, N=0, Z=1, C=1
+at 3003
+r2 = 0104 SUBC FLAG: Flag   check error: V=1, N=1, Z=0, C=0
+r5 = fef0 SUBC FLAG: Result check error: V=1, N=1, Z=0, C=0
+at 3004
+r2 = 0101 SUBC FLAG: Flag   check error: V=1, N=0, Z=0, C=1
+r5 = 00ff SUBC FLAG: Result check error: V=1, N=0, Z=0, C=1
+# SUBC.B (BYTE MODE): Check Flags
+at 4000
+r2 = 0004 SUBC.B FLAG: Flag   check error: V=0, N=1, Z=0, C=0
+r5 = 00fb SUBC.B FLAG: Result check error: V=0, N=1, Z=0, C=0
+at 4001
+r2 = 0001 SUBC.B FLAG: Flag   check error: V=0, N=0, Z=0, C=1
+r5 = 0002 SUBC.B FLAG: Result check error: V=0, N=0, Z=0, C=1
+at 4002
+r2 = 0003 SUBC.B FLAG: Flag   check error: V=0, N=0, Z=1, C=1
+r5 = 0000 SUBC.B FLAG: Result check error: V=0, N=0, Z=1, C=1
+at 4003
+r2 = 0104 SUBC.B FLAG: Flag   check error: V=1, N=1, Z=0, C=0
+r5 = 00f7 SUBC.B FLAG: Result check error: V=1, N=1, Z=0, C=0
+at 4004
+r2 = 0101 SUBC.B FLAG: Flag   check error: V=1, N=0, Z=0, C=1
+r5 = 000a SUBC.B FLAG: Result check error: V=1, N=0, Z=0, C=1

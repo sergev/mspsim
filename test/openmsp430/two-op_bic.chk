@@ -1,0 +1,22 @@
+# BIC (WORD MODE)
+at 1000
+r5 = 5555 BIC Test
+r6 = aaaa BIC Test
+# BIC.B (BYTE MODE)
+at 2000
+r5 = 0088 BIC.B Test
+r6 = 0022 BIC.B Test
+# BIC (WORD MODE): Check Flags
+at 3000
+r2 = 0005 BIC FLAG: Flag   check error
+r5 = 0444 BIC FLAG: Result check error
+at 3001
+r2 = 0102 BIC FLAG: Flag   check error
+r5 = 0444 BIC FLAG: Result check error
+# BIC.B (BYTE MODE): Check Flags
+at 4000
+r2 = 0005 BIC.B FLAG: Flag   check error
+r5 = 0004 BIC.B FLAG: Result check error
+at 4001
+r2 = 0102 BIC.B FLAG: Flag   check error
+r5 = 0004 BIC.B FLAG: Result check error

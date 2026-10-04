@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "asm.h"
 #include "io.h"
 #include "memory/memory.h"
 #include "utilities.h"
@@ -36,8 +37,40 @@ int uart_rx(Emulator *emu)
     return (unsigned char)*uart_input++;
 }
 
+void assemble(Emulator *emu, const char *source)
+{
+    char err[256];
+
+    if (asm_text(emu, source, err, sizeof err) < 0) {
+        printf("  assembler: %s\n", err);
+        test_failed = 1;
+    }
+    emu_reset(emu);
+}
+
+void trace_start(Emulator *emu)
+{
+    emu->trace      = true;
+    emu->trace_file = tmpfile();
+}
+
+const char *trace_text(Emulator *emu)
+{
+    static char buf[8192];
+    size_t n;
+
+    rewind(emu->trace_file);
+    n      = fread(buf, 1, sizeof buf - 1, emu->trace_file);
+    buf[n] = 0;
+    fclose(emu->trace_file);
+    emu->trace_file = NULL;
+    emu->trace      = false;
+    return buf;
+}
+
 Emulator *emu_new(void)
 {
+    emu_destroy(current); /* a test may make several */
     current = emu_create();
     poke(0xFFFE, 0xC000); /* reset vector */
     emu_reset(current);

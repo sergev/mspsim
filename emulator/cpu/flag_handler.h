@@ -28,6 +28,4 @@ uint8_t is_negative(uint16_t result, uint8_t bw_flag);
 
 uint8_t is_zero(uint16_t result, uint8_t bw_flag);
 
-uint8_t is_carried(uint32_t original_dst_value, uint32_t source_value, uint8_t bw_flag);
-
 #endif

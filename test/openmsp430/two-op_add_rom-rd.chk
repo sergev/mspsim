@@ -1,0 +1,35 @@
+# Check when source is @Rn
+at 1000
+r5 = 7777 ROM Read: ADD @Rn Rm
+r4 != 0000 ROM Read: ADD @Rn PC
+mem0210 = 6666 ROM Read: ADD @Rn x(Rm)
+mem0212 = ed2e ROM Read: ADD @Rn EDE
+mem0214 = 4653 ROM Read: ADD @Rn &EDE
+# Check when source is @Rn+
+at 2000
+r5 = dddd ROM Read: ADD @Rn+ Rm
+r7 = aaaa ROM Read: ADD @Rn+ PC
+mem0210 = 89ab ROM Read: ADD @Rn+ x(Rm)
+mem0212 = 5073 ROM Read: ADD @Rn+ EDE
+mem0214 = 5776 ROM Read: ADD @Rn+ &EDE
+# Check when source is x(Rn)
+at 3000
+r5 = 957b ROM Read: ADD x(Rn) Rm
+r6 != 0000 ROM Read: ADD x(Rn) PC
+mem0214 = 5776 ROM Read: ADD x(Rn) x(Rm)
+mem0220 = 937b ROM Read: ADD x(Rn) EDE
+mem0208 = ace4 ROM Read: ADD x(Rn) &EDE
+# Check when source is EDE
+at 4000
+r4 = 06f7 ROM Read: ADD EDE Rm
+r6 != 0000 ROM Read: ADD EDE PC
+mem0214 = 0946 ROM Read: ADD EDE x(Rm)
+mem0216 = b933 ROM Read: ADD EDE EDE
+mem0212 = 2ab2 ROM Read: ADD EDE &EDE
+# Check when source is &EDE
+at 5000
+r4 = 66f5 ROM Read: ADD &EDE Rm
+r6 != 0000 ROM Read: ADD &EDE PC
+mem0214 = 82d1 ROM Read: ADD &EDE x(Rm)
+mem0218 = ca4e ROM Read: ADD &EDE EDE
+mem0202 = 1338 ROM Read: ADD &EDE &EDE

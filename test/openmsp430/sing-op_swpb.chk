@@ -1,0 +1,40 @@
+# Addressing mode: Rn
+at 1000
+r4 = 2475 SWPB (Rn mode): test 1 (result)
+r5 = 0102 SWPB (Rn mode): test 1 (C flag)
+r6 = b61c SWPB (Rn mode): test 2 (result)
+r7 = 0005 SWPB (Rn mode): test 2 (C flag)
+# Addressing mode: @Rn
+at 2000
+mem0200 = 2475 SWPB (@Rn mode): test 1 (result)
+r4 = 0200 SWPB (@Rn mode): test 1 (address)
+r5 = 0102 SWPB (@Rn mode): test 1 (C flag)
+mem0202 = b61c SWPB (@Rn mode): test 2 (result)
+r6 = 0202 SWPB (@Rn mode): test 2 (address)
+r7 = 0005 SWPB (@Rn mode): test 2 (C flag)
+# Addressing mode: @Rn+
+at 3000
+mem0208 = 2475 SWPB (@Rn+ mode): test 1 (result)
+r4 = 020a SWPB (@Rn+ mode): test 1 (address)
+r5 = 0102 SWPB (@Rn+ mode): test 1 (C flag)
+mem020a = b61c SWPB (@Rn+ mode): test 2 (result)
+r6 = 020c SWPB (@Rn+ mode): test 2 (address)
+r7 = 0005 SWPB (@Rn+ mode): test 2 (C flag)
+# Addressing mode: X(Rn)
+at 4000
+mem0210 = 2475 SWPB (X(Rn) mode): test 1 (result)
+r5 = 0102 SWPB (X(Rn) mode): test 1 (C flag)
+mem0212 = b61c SWPB (X(Rn) mode): test 2 (result)
+r7 = 0005 SWPB (X(Rn) mode): test 2 (C flag)
+# Addressing mode: EDE
+at 5000
+mem0218 = 2475 SWPB (EDE mode): test 1 (result)
+r5 = 0102 SWPB (EDE mode): test 1 (C flag)
+mem021a = b61c SWPB (EDE mode): test 2 (result)
+r7 = 0005 SWPB (EDE mode): test 2 (C flag)
+# Addressing mode: &EDE
+at 6000
+mem0220 = 2475 SWPB (&EDE mode): test 1 (result)
+r5 = 0102 SWPB (&EDE mode): test 1 (C flag)
+mem0222 = b61c SWPB (&EDE mode): test 2 (result)
+r7 = 0005 SWPB (&EDE mode): test 2 (C flag)

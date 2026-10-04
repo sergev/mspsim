@@ -1,0 +1,34 @@
+# DADD (WORD MODE)
+at 1000
+r5 = 1237 DADD without Carry
+r6 = 7111 DADD with Carry
+# DADD.B (BYTE MODE)
+at 2000
+r5 = 0037 DADD.B  without Carry
+r6 = 0071 DADD.B  with Carry
+# DADD (WORD MODE): Check Flags
+at 3000
+r2 = 0000 DADD FLAG: Flag   check error: V=0, N=0, Z=0, C=0
+r5 = 7999 DADD FLAG: Result check error: V=0, N=0, Z=0, C=0
+at 3001
+r2 = 0001 DADD FLAG: Flag   check error: V=0, N=0, Z=0, C=1
+r5 = 0002 DADD FLAG: Result check error: V=0, N=0, Z=0, C=1
+at 3002
+r2 = 0003 DADD FLAG: Flag   check error: V=0, N=0, Z=1, C=1
+r5 = 0000 DADD FLAG: Result check error: V=0, N=0, Z=1, C=1
+at 3003
+r2 = 0104 DADD FLAG: Flag   check error: V=1, N=1, Z=0, C=0
+r5 = 8002 DADD FLAG: Result check error: V=1, N=1, Z=0, C=0
+# DADD.B (BYTE MODE): Check Flags
+at 4000
+r2 = 0000 DADD.B FLAG: Flag   check error: V=0, N=0, Z=0, C=0
+r5 = 0079 DADD.B FLAG: Result check error: V=0, N=0, Z=0, C=0
+at 4001
+r2 = 0001 DADD.B FLAG: Flag   check error: V=0, N=0, Z=0, C=1
+r5 = 0002 DADD.B FLAG: Result check error: V=0, N=0, Z=0, C=1
+at 4002
+r2 = 0003 DADD.B FLAG: Flag   check error: V=0, N=0, Z=1, C=1
+r5 = 0000 DADD.B FLAG: Result check error: V=0, N=0, Z=1, C=1
+at 4003
+r2 = 0104 DADD.B FLAG: Flag   check error: V=1, N=1, Z=0, C=0
+r5 = 0082 DADD.B FLAG: Result check error: V=1, N=1, Z=0, C=0

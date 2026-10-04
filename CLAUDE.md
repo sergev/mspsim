@@ -21,7 +21,10 @@ make test                               # all tests (ctest), including test/cli_
   - Include by path from `emulator/` (e.g. `"cpu/registers.h"`, never `"../"`).
   - Every file includes what it uses. There is no umbrella header: `emulator.h` declares the `Emulator`/`Cpu`/`Debugger` types, `StopReason`, and `emu_create()`/`emu_destroy()`/`emu_reset()`/`emu_run()`.
 - **Unit tests** live in `test/`, one executable per `test_*.c` file, each registered with ctest in `test/CMakeLists.txt` (add new files to its `foreach` list).
-  - `harness.h` provides `TEST()`, `CHECK`/`CHECK_EQ`, `emu_new()`, `PROGRAM(addr, words...)` for hand-encoded instructions, `poke`/`peek` and `step`.
+  - `harness.h` provides `TEST()`, `CHECK`/`CHECK_EQ`/`CHECK_STR`, `emu_new()`, `PROGRAM(addr, words...)` for hand-encoded instructions, `assemble(emu, source)` for assembly text, `poke`/`peek`, `step`, and `trace_start()`/`trace_text()` to capture a trace.
+  - `test/asm.c` is a small two-pass assembler for tests (gas-like syntax, constant generators chosen as gas does, `1f`/`1b` labels, `.set`/`.word`/`.byte`/`.section .vectors`, emulated instructions). Code goes at 0xC000, data at 0x0200.
+  - `test/openmsp430/` holds the openMSP430 instruction tests (LGPL): `.s43` sources run with checkpoint files `.chk` (`test_openmsp430.c`). `test/binutils/add.s` is from the gdb simulator suite. See the READMEs there.
+  - `test/firmware/` holds C programs that run only when `msp430-elf-gcc` is found (`MSP430_FLAGS` sets the compiler flags).
   - `emu_new()` wraps `emu_create()`; `poke`/`peek` go through the memory bus.
   - It also defines the front-end hooks: `print_console` captures into `console_text`, `uart_tx` into `uart_output`, and `uart_rx` reads from `uart_input` (set it before stepping).
   - Each file's `main()` lists its cases with `T(name)`.
@@ -49,7 +52,9 @@ make test                               # all tests (ctest), including test/cli_
 
 **Registers:** `cpu->r[16]` is aliased by `pc`, `sp`, `sr`, `cg2`, `r4`…`r15`. SR is a plain `uint16_t` with `SR_C`, `SR_Z`, `SR_N`, `SR_GIE`, `SR_CPUOFF`, … masks; use `set_flag()`. Register-mode writes go through `reg_write()`: byte writes clear the high byte, and R3 discards writes.
 
-**Execution:** `cpu_step()` (`cpu/registers.c`) decodes and executes one instruction (skipped when `CPUOFF` is set), then calls `handle_interrupts()` (which returns the vector number taken, or -1), and advances `cpu->cycles`. For now it counts a flat 4 cycles per instruction, 1 per idle step and 6 per interrupt entry.
+**Execution:** `cpu_step()` (`cpu/registers.c`) decodes and executes one instruction (skipped when `CPUOFF` is set), then calls `handle_interrupts()` (which returns the vector number taken, or -1), and advances `cpu->cycles`. `decode()` returns each instruction's cycle count from the SLAU144 tables (`cycle_class()` in `decoder.c`, tables in `formatI.c`/`formatII.c`; constant generators time as Rn, jumps take 2, RETI 5). An idle step while `CPUOFF` counts 1 cycle, and interrupt entry 6.
+
+**CPU details that the openMSP430 tests pin down:** SR keeps only bits 8–0 (`SR_MASK`). PUSH and CALL decrement SP before computing their operand, so `push sp`, `call @sp` and `call 2(sp)` see the new SP. The `@Rn+` step is applied after the destination address is computed (`operand_increment()`), so `mov @sp+, 8(sp)` uses the old SP. ADD/ADDC/SUB/SUBC/CMP share one adder: DST + SRC (or ~SRC) + carry-in.
 
 **Interrupts:** `cpu->irq_pending` is a mask with bit N requesting the vector at 0xFFE0 + 2N; a higher N has higher priority. Sources assert and deassert requests with `cpu_set_irq()`. They're level-sensitive: the source must deassert. The exception is the NMI (vector 14), which ignores GIE and is cleared when accepted.
 

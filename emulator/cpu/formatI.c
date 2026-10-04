@@ -37,7 +37,7 @@
 #include "cpu/registers.h"
 #include "utilities.h"
 
-void decode_formatI(Emulator *emu, uint16_t instruction, Listing *l)
+unsigned decode_formatI(Emulator *emu, uint16_t instruction, Listing *l)
 {
     static const char *const names[] = { "mov",  "add", "addc", "subc", "sub", "cmp",
                                          "dadd", "bit", "bic",  "bis",  "xor", "and" };
@@ -62,12 +62,13 @@ void decode_formatI(Emulator *emu, uint16_t instruction, Listing *l)
     else
         str_append(l->ops, sizeof l->ops, ", ");
     decode_operand(emu, l, &dst, destination, ad_flag, byte, false);
+    operand_increment(emu, &src);
 
     if (l) {
         snprintf(l->mnemonic, sizeof l->mnemonic, "%s%s", names[opcode - 4], byte ? ".b" : "");
         if (opcode == 0x4 && src.kind == OPND_CONST && dst.kind == OPND_REG && dst.reg == 0)
             listing_target(l, src.value, true); /* br #addr */
-        return;
+        return 0;
     }
 
     bool dst_is_sr = (dst.kind == OPND_REG && dst.reg == 2);
@@ -90,132 +91,63 @@ void decode_formatI(Emulator *emu, uint16_t instruction, Listing *l)
         break;
     }
 
-    /* ADD SOURCE, DESTINATION
-     *   Ex: ADD R5, R4
-     *
-     * The source operand is added to the destination operand. The source op
-     * is not affected. The previous contents of the destination are lost.
-     *
-     * DESTINATION = SOURCE + DESTINATION
+    /* ADD, ADDC, SUBC, SUB, CMP: DST + SRC + carry-in, with SUBC/SUB/CMP
+     * adding ~SRC. CMP only sets the flags.
      *
      * N: Set if result is negative, reset if positive
      * Z: Set if result is zero, reset otherwise
-     * C: Set if there is a carry from the result, cleared if not
+     * C: Set if there is a carry out of the MSB (for subtraction: no borrow)
      * V: Set if an arithmetic overflow occurs, otherwise reset
-     *
      */
-    case 0x5: {
-        result = (dst_value + source_value) & mask;
-        operand_write(emu, &dst, result, byte);
+    case 0x5: /* ADD */
+    case 0x6: /* ADDC */
+    case 0x7: /* SUBC */
+    case 0x8: /* SUB */
+    case 0x9: /* CMP */ {
+        unsigned carry  = (opcode == 0x5)                    ? 0
+                          : (opcode == 0x6 || opcode == 0x7) ? (cpu->sr & SR_C)
+                                                             : 1;
+        uint16_t addend = (opcode >= 0x7) ? ~source_value & mask : source_value;
+        uint32_t sum    = dst_value + addend + carry;
 
-        set_flag(cpu, SR_Z, is_zero(result, bw_flag));
+        result = sum & mask;
+        if (opcode != 0x9)
+            operand_write(emu, &dst, result, byte);
+
+        set_flag(cpu, SR_Z, result == 0);
         set_flag(cpu, SR_N, is_negative(result, bw_flag));
-        set_flag(cpu, SR_C, is_carried(dst_value, source_value, bw_flag));
-        set_flag(cpu, SR_V, is_overflowed(source_value, dst_value, result, bw_flag));
-        break;
-    }
-
-    /* ADDC SOURCE, DESTINATION
-     *   Ex: ADDC R5, R4
-     *
-     * DESTINATION += (SOURCE + C)
-     *
-     * N: Set if result is negative, reset if positive
-     * Z: Set if result is zero, reset otherwise
-     * C: Set if there is a carry from the result, cleared if not
-     * V: Set if an arithmetic overflow occurs, otherwise reset
-     *
-     */
-    case 0x6: {
-        result = (dst_value + source_value + (cpu->sr & SR_C)) & mask;
-        operand_write(emu, &dst, result, byte);
-
-        set_flag(cpu, SR_Z, is_zero(result, bw_flag));
-        set_flag(cpu, SR_N, is_negative(result, bw_flag));
-        set_flag(cpu, SR_C, is_carried(dst_value, source_value, bw_flag));
-        set_flag(cpu, SR_V, is_overflowed(source_value, dst_value, result, bw_flag));
-        break;
-    }
-
-    /* SUBC SOURCE, DESTINATION
-     *   Ex: SUB R4, R5
-     *
-     *   DST += ~SRC + C
-     *
-     *  N: Set if result is negative, reset if positive
-     *  Z: Set if result is zero, reset otherwise
-     *  C: Set if there is a carry from the MSB of the result, reset otherwise.
-     *     Set to 1 if no borrow, reset if borrow.
-     *  V: Set if an arithmetic overflow occurs, otherwise reset
-     *
-     *
-     */
-    case 0x7: {
-        source_value = ~source_value & mask; /* 1's comp */
-        result       = (dst_value + source_value + (cpu->sr & SR_C)) & mask;
-        operand_write(emu, &dst, result, byte);
-
-        set_flag(cpu, SR_Z, is_zero(result, bw_flag));
-        set_flag(cpu, SR_N, is_negative(result, bw_flag));
-        set_flag(cpu, SR_C, is_carried(dst_value, source_value, bw_flag));
-        set_flag(cpu, SR_V, is_overflowed(source_value, dst_value, result, bw_flag));
-        break;
-    }
-
-        /* SUB SOURCE, DESTINATION
-         *   Ex: SUB R4, R5
-         *
-         *   DST -= SRC
-         *
-         *  N: Set if result is negative, reset if positive
-         *  Z: Set if result is zero, reset otherwise
-         *  C: Set if there is a carry from the MSB of the result, reset otherwise.
-         *     Set to 1 if no borrow, reset if borrow.
-         *  V: Set if an arithmetic overflow occurs, otherwise reset
-         *  TODO: SUBTRACTION OVERFLOW FLAG ERROR
-         *  TODO: C is never cleared
-         */
-
-    case 0x8: {
-        uint16_t negated = (~source_value + 1) & mask;
-
-        result = (dst_value + negated) & mask;
-        operand_write(emu, &dst, result, byte);
-
-        set_flag(cpu, SR_Z, is_zero(result, bw_flag));
-        set_flag(cpu, SR_N, is_negative(result, bw_flag));
-        if (source_value == 0 || is_carried(dst_value, negated, bw_flag))
-            cpu->sr |= SR_C;
-        set_flag(cpu, SR_V, is_overflowed(negated, dst_value, result, bw_flag));
-        break;
-    }
-
-    /* CMP SOURCE, DESTINATION
-     *
-     * N: Set if result is negative, reset if positive (src ≥ dst)
-     * Z: Set if result is zero, reset otherwise (src = dst)
-     * C: Set if there is a carry from the MSB of the result, reset otherwise
-     * V: Set if an arithmetic overflow occurs, otherwise reset
-     * TODO: Fix overflow error
-     */
-    case 0x9: {
-        uint16_t negated = (~source_value + 1) & mask;
-
-        result = (dst_value + negated) & mask;
-
-        set_flag(cpu, SR_N, is_negative(result, bw_flag));
-        set_flag(cpu, SR_Z, is_zero(result, bw_flag));
-        /* the carry may happen during conversion to 2's comp */
-        set_flag(cpu, SR_C, source_value == 0 || is_carried(dst_value, negated, bw_flag));
-        set_flag(cpu, SR_V, is_overflowed(negated, dst_value, result, bw_flag));
+        set_flag(cpu, SR_C, sum > mask);
+        set_flag(cpu, SR_V, is_overflowed(addend, dst_value, result, bw_flag));
         break;
     }
 
     /* DADD SOURCE, DESTINATION
      *
-     * TODO: not implemented
+     * DESTINATION = SOURCE + DESTINATION + C, decimally (BCD)
+     *
+     * N: Set if MSB of result is set
+     * Z: Set if result is zero
+     * C: Set if the BCD result is greater than 9999 (99 for bytes)
+     * V: As for binary addition of the operands and the result
      */
     case 0xA: {
+        unsigned carry = cpu->sr & SR_C;
+
+        result = 0;
+        for (int shift = 0; shift < (byte ? 8 : 16); shift += 4) {
+            unsigned digit = ((source_value >> shift) & 0xF) + ((dst_value >> shift) & 0xF) + carry;
+
+            carry = digit > 9;
+            if (carry)
+                digit -= 10;
+            result |= (digit & 0xF) << shift;
+        }
+        operand_write(emu, &dst, result, byte);
+
+        set_flag(cpu, SR_Z, result == 0);
+        set_flag(cpu, SR_N, is_negative(result, bw_flag));
+        set_flag(cpu, SR_C, carry);
+        set_flag(cpu, SR_V, is_overflowed(source_value, dst_value, result, bw_flag));
         break;
     }
 
@@ -243,7 +175,7 @@ void decode_formatI(Emulator *emu, uint16_t instruction, Listing *l)
     case 0xC: {
         // __bic_SR_register_on_exit: a byte op keeps the high byte of SR
         if (dst_is_sr)
-            cpu->sr &= ~source_value;
+            cpu->sr &= ~source_value & SR_MASK;
         else
             operand_write(emu, &dst, dst_value & ~source_value, byte);
         break;
@@ -255,7 +187,7 @@ void decode_formatI(Emulator *emu, uint16_t instruction, Listing *l)
     case 0xD: {
         // __bis_SR_register
         if (dst_is_sr)
-            cpu->sr |= source_value;
+            cpu->sr = (cpu->sr | source_value) & SR_MASK;
         else
             operand_write(emu, &dst, dst_value | source_value, byte);
         break;
@@ -298,4 +230,11 @@ void decode_formatI(Emulator *emu, uint16_t instruction, Listing *l)
     }
 
     } // # End of switch
+
+    /* cycles by source class (Rn, @Rn, @Rn+, #N, x(Rn)/EDE/&EDE) and destination */
+    static const uint8_t cycles[5][3] = {
+        /* Rm PC  mem */
+        { 1, 2, 4 }, { 2, 2, 5 }, { 2, 3, 5 }, { 2, 3, 5 }, { 3, 3, 6 },
+    };
+    return cycles[cycle_class(source, as_flag)][ad_flag ? 2 : destination == 0 ? 1 : 0];
 }

@@ -1,0 +1,18 @@
+Instruction tests from the openMSP430 project by Olivier Girard
+(https://opencores.org/projects/openmsp430), core/sim/rtl_sim/src/.
+They are under the GNU Lesser General Public License 2.1 or later; see the
+header of each .s43 file.
+
+The .s43 sources are unchanged. They are assembled by test/asm.c, with
+.text at 0xC000 and __data_start (PER_SIZE in the original) at 0x0200.
+
+Each .chk file was converted from the matching Verilog checker (.v) of
+the openMSP430 testbench: "@(r15==X)" became "at X", and each
+"if (reg !== value) tb_error(msg)" became "reg = value msg". The format is
+described in test/test_openmsp430.c. Changes from the originals:
+
+- Checks of R3 are dropped: the testbench looks at the register storage
+  of R3, which a program can never read (R3 always reads as a constant).
+- sing-op_reti: the IRQ and NMI waveforms became "irq MASK CYCLES" and
+  "nmi" actions, and the checks of the NMIIFG/NMIE flags in IFG1/IE1 are
+  dropped, since mspsim has no NMI pin logic.

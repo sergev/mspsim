@@ -50,9 +50,14 @@ void format_listing(const Listing *l, char *buf, size_t size);
 /*
  * Execute an instruction whose opcode word was just fetched (l == NULL),
  * or disassemble it into l, prepared by listing_init(): no data accesses,
- * no register changes except PC.
+ * no register changes except PC. Returns the instruction's cycle count
+ * (SLAU144 tables 3-14 to 3-16) when executing.
  */
-void decode(Emulator *emu, uint16_t instruction, Listing *l);
+unsigned decode(Emulator *emu, uint16_t instruction, Listing *l);
+
+/* Source addressing class for the cycle tables: constant generators count as Rn. */
+enum { CYC_RN, CYC_IND, CYC_INC, CYC_IMM, CYC_MEM };
+int cycle_class(uint8_t reg, uint8_t mode);
 
 /* Next instruction word at PC (ACC_FETCH); PC += 2. */
 uint16_t fetch(Emulator *emu);
@@ -64,18 +69,24 @@ typedef enum { OPND_REG, OPND_MEM, OPND_CONST } OperandKind;
 
 typedef struct {
     OperandKind kind;
-    uint8_t reg;    /* OPND_REG */
+    uint8_t reg;    /* OPND_REG, and the register of @Rn+ */
     uint16_t addr;  /* OPND_MEM */
     uint16_t value; /* OPND_CONST: immediate or constant generator */
+    uint8_t inc;    /* pending @Rn+ step, applied by operand_increment() */
 } Operand;
 
 /*
  * Decode a source (As, constant generators apply) or destination (Ad)
- * operand and fetch its extension word. When disassembling (l != NULL),
- * append its text to l->ops instead of applying @Rn+.
+ * operand and fetch its extension word. For @Rn+ the register step is
+ * left pending in op->inc. When disassembling (l != NULL), append its
+ * text to l->ops.
  */
 void decode_operand(Emulator *emu, Listing *l, Operand *op, uint8_t reg, uint8_t mode, bool byte,
                     bool is_source);
+
+/* Apply a pending @Rn+ step. Format I does it after decoding the
+ * destination, so x(Rn) there sees the old Rn, as on openMSP430. */
+void operand_increment(Emulator *emu, Operand *op);
 
 uint16_t operand_read(Emulator *emu, const Operand *op, bool byte);
 void operand_write(Emulator *emu, const Operand *op, uint16_t val, bool byte);

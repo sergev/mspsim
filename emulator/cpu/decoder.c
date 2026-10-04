@@ -42,7 +42,7 @@ uint16_t fetch(Emulator *emu)
 }
 
 // ##########+++ CPU Decode Cycle +++##########
-void decode(Emulator *emu, uint16_t instruction, Listing *l)
+unsigned decode(Emulator *emu, uint16_t instruction, Listing *l)
 {
     uint8_t FormatId;
 
@@ -50,19 +50,31 @@ void decode(Emulator *emu, uint16_t instruction, Listing *l)
 
     if (FormatId == 0x1) {
         // format II (single operand) instruction
-        decode_formatII(emu, instruction, l);
+        return decode_formatII(emu, instruction, l);
     } else if (FormatId >= 0x2 && FormatId <= 3) {
         // format III (jump) instruction
-        decode_formatIII(emu, instruction, l);
+        return decode_formatIII(emu, instruction, l);
     } else if (FormatId >= 0x4) {
         // format I (two operand) instruction
-        decode_formatI(emu, instruction, l);
+        return decode_formatI(emu, instruction, l);
     } else if (l) {
         snprintf(l->mnemonic, sizeof l->mnemonic, ".word");
         snprintf(l->ops, sizeof l->ops, "0x%04x", instruction);
     } else {
         emu->stop = EMU_ILLEGAL;
     }
+    return 0;
+}
+
+int cycle_class(uint8_t reg, uint8_t mode)
+{
+    if ((reg == 2 && mode > 1) || reg == 3 || mode == 0)
+        return CYC_RN;
+    if (mode == 1)
+        return CYC_MEM;
+    if (mode == 2)
+        return CYC_IND;
+    return reg == 0 ? CYC_IMM : CYC_INC;
 }
 
 // Constant Generator
@@ -174,6 +186,8 @@ void decode_operand(Emulator *emu, Listing *l, Operand *op, uint8_t reg, uint8_t
     Cpu *cpu       = emu->cpu;
     int16_t offset = 0;
 
+    op->reg = reg;
+    op->inc = 0;
     if (is_source && ((reg == 2 && mode > 1) || reg == 3)) {
         op->kind  = OPND_CONST;
         op->value = run_constant_generator(reg, mode);
@@ -201,7 +215,7 @@ void decode_operand(Emulator *emu, Listing *l, Operand *op, uint8_t reg, uint8_t
         op->kind = OPND_MEM;
         op->addr = cpu->r[reg];
         if (!l)
-            cpu->r[reg] += (byte && reg != 1) ? 1 : 2;
+            op->inc = (byte && reg != 1) ? 1 : 2;
     }
     if (!l)
         return;
@@ -225,6 +239,14 @@ void decode_operand(Emulator *emu, Listing *l, Operand *op, uint8_t reg, uint8_t
     else
         snprintf(text, sizeof text, mode == 2 ? "@%s" : "@%s+", name);
     str_append(l->ops, sizeof l->ops, text);
+}
+
+void operand_increment(Emulator *emu, Operand *op)
+{
+    if (op->inc) {
+        emu->cpu->r[op->reg] += op->inc;
+        op->inc = 0;
+    }
 }
 
 uint16_t operand_read(Emulator *emu, const Operand *op, bool byte)

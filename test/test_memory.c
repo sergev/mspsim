@@ -28,13 +28,13 @@ TEST(fresh_memory)
     CHECK_EQ(peek(0xC000), 0xFFFF); /* erased flash */
 }
 
-TEST(sr_keeps_reserved_bits)
+TEST(sr_reserved_bits_read_as_zero)
 {
     Emulator *emu = emu_new();
 
     PROGRAM(0xC000, 0x4032, 0xFE01); /* mov #0xfe01, sr */
     step(emu, 1);
-    CHECK_EQ(emu->cpu->sr, 0xFE01);
+    CHECK_EQ(emu->cpu->sr, 0x0001);
 }
 
 TEST(symbolic_source_and_destination)
@@ -152,7 +152,7 @@ int main(int argc, char **argv)
         T(word_access_ignores_bit0),
         T(byte_access),
         T(fresh_memory),
-        T(sr_keeps_reserved_bits),
+        T(sr_reserved_bits_read_as_zero),
         T(symbolic_source_and_destination),
         T(push_symbolic),
         T(autoincrement_byte),

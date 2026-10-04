@@ -1,0 +1,22 @@
+# BIS (WORD MODE)
+at 1000
+r5 = bbbb BIS Test
+r6 = dddd BIS Test
+# BIS.B (BYTE MODE)
+at 2000
+r5 = 0055 BIS.B Test
+r6 = 00aa BIS.B Test
+# BIS (WORD MODE): Check Flags
+at 3000
+r2 = 0005 BIS FLAG: Flag   check error
+r5 = 0eee BIS FLAG: Result check error
+at 3001
+r2 = 0102 BIS FLAG: Flag   check error
+r5 = 0eee BIS FLAG: Result check error
+# BIS.B (BYTE MODE): Check Flags
+at 4000
+r2 = 0005 BIS.B FLAG: Flag   check error
+r5 = 000e BIS.B FLAG: Result check error
+at 4001
+r2 = 0102 BIS.B FLAG: Flag   check error
+r5 = 000e BIS.B FLAG: Result check error

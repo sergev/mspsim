@@ -56,7 +56,8 @@ extern int test_failed;
         }                                                                                        \
     } while (0)
 
-/* Fresh emulator from emu_create(); freed by run_tests(). */
+/* Fresh emulator from emu_create(), with reset vector 0xC000; freed by the
+ * next emu_new() or by run_tests(). */
 Emulator *emu_new(void);
 
 /* Word access to emulated memory. */
@@ -70,6 +71,14 @@ uint16_t peek(uint16_t addr);
 void poke_words(uint16_t addr, const uint16_t *words, size_t n);
 
 void step(Emulator *emu, int n);
+
+/* Assemble source (see asm.h) into memory, then reset: PC comes from the
+ * reset vector, 0xC000 (ASM_TEXT) unless the source sets .vectors. */
+void assemble(Emulator *emu, const char *source);
+
+/* Trace into a temporary file; trace_text() returns the trace so far and stops tracing. */
+void trace_start(Emulator *emu);
+const char *trace_text(Emulator *emu);
 
 /* Text sent to print_console() since the test started. */
 extern char console_text[4096];

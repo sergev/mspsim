@@ -1,0 +1,40 @@
+# Addressing mode: Rn
+at 1000
+r4 = 0024 SXT (Rn mode): test 1 (result)
+r5 = 0001 SXT (Rn mode): test 1 (C flag)
+r6 = ffb6 SXT (Rn mode): test 2 (result)
+r7 = 0005 SXT (Rn mode): test 2 (C flag)
+# Addressing mode: @Rn
+at 2000
+mem0200 = 0024 SXT (@Rn mode): test 1 (result)
+r4 = 0200 SXT (@Rn mode): test 1 (address)
+r5 = 0001 SXT (@Rn mode): test 1 (C flag)
+mem0202 = ffb6 SXT (@Rn mode): test 2 (result)
+r6 = 0202 SXT (@Rn mode): test 2 (address)
+r7 = 0005 SXT (@Rn mode): test 2 (C flag)
+# Addressing mode: @Rn+
+at 3000
+mem0208 = 0024 SXT (@Rn+ mode): test 1 (result)
+r4 = 020a SXT (@Rn+ mode): test 1 (address)
+r5 = 0001 SXT (@Rn+ mode): test 1 (C flag)
+mem020a = ffb6 SXT (@Rn+ mode): test 2 (result)
+r6 = 020c SXT (@Rn+ mode): test 2 (address)
+r7 = 0005 SXT (@Rn+ mode): test 2 (C flag)
+# Addressing mode: X(Rn)
+at 4000
+mem0210 = 0024 SXT (X(Rn) mode): test 1 (result)
+r5 = 0001 SXT (X(Rn) mode): test 1 (C flag)
+mem0212 = ffb6 SXT (X(Rn) mode): test 2 (result)
+r7 = 0005 SXT (X(Rn) mode): test 2 (C flag)
+# Addressing mode: EDE
+at 5000
+mem0218 = 0024 SXT (EDE mode): test 1 (result)
+r5 = 0001 SXT (EDE mode): test 1 (C flag)
+mem021a = ffb6 SXT (EDE mode): test 2 (result)
+r7 = 0005 SXT (EDE mode): test 2 (C flag)
+# Addressing mode: &EDE
+at 6000
+mem0220 = 0024 SXT (&EDE mode): test 1 (result)
+r5 = 0001 SXT (&EDE mode): test 1 (C flag)
+mem0222 = ffb6 SXT (&EDE mode): test 2 (result)
+r7 = 0005 SXT (&EDE mode): test 2 (C flag)
