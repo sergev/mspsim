@@ -12,30 +12,30 @@ endif()
 add_compile_options(-Wall -Wextra)
 
 add_library(msp430core STATIC
-    emulator/emulator.c
-    emulator/io.c
-    emulator/utilities.c
-    emulator/cpu/registers.c
-    emulator/cpu/decoder.c
-    emulator/cpu/flag_handler.c
-    emulator/cpu/formatI.c
-    emulator/cpu/formatII.c
-    emulator/cpu/formatIII.c
-    emulator/cpu/interrupts.c
-    emulator/loader/loader.c
-    emulator/loader/symbols.c
-    emulator/memory/memory.c
-    emulator/uart/uart.c
-    emulator/debugger/debugger.c
-    emulator/debugger/disassembler.c
-    emulator/debugger/register_display.c
-    emulator/debugger/trace.c
+    src/emulator.c
+    src/io.c
+    src/utilities.c
+    src/cpu/registers.c
+    src/cpu/decoder.c
+    src/cpu/flag_handler.c
+    src/cpu/formatI.c
+    src/cpu/formatII.c
+    src/cpu/formatIII.c
+    src/cpu/interrupts.c
+    src/loader/loader.c
+    src/loader/symbols.c
+    src/mem/memory.c
+    src/uart/uart.c
+    src/debug/debugger.c
+    src/debug/disassembler.c
+    src/debug/register_display.c
+    src/debug/trace.c
 )
-target_include_directories(msp430core PUBLIC emulator)
+target_include_directories(msp430core PUBLIC src)
 
 # Vendored line editor, BSD-2-Clause.
-add_library(linenoise STATIC third_party/linenoise/linenoise.c)
-target_include_directories(linenoise PUBLIC third_party/linenoise)
+add_library(linenoise STATIC src/linenoise/linenoise.c)
+target_include_directories(linenoise PUBLIC src/linenoise)
 
 add_executable(mspsim src/main.c)
 target_link_libraries(mspsim PRIVATE msp430core linenoise)
@@ -43,7 +43,8 @@ install(TARGETS mspsim RUNTIME DESTINATION bin)
 
 # Every header must compile on its own (and survive double inclusion).
 file(GLOB_RECURSE all_headers CONFIGURE_DEPENDS
-    ${CMAKE_SOURCE_DIR}/emulator/*.h ${CMAKE_SOURCE_DIR}/test/*.h)
+    ${CMAKE_SOURCE_DIR}/src/*.h ${CMAKE_SOURCE_DIR}/test/*.h)
+list(FILTER all_headers EXCLUDE REGEX "/src/linenoise/")
 set(header_checks)
 foreach(header ${all_headers})
     file(RELATIVE_PATH rel ${CMAKE_SOURCE_DIR} ${header})
@@ -54,7 +55,7 @@ foreach(header ${all_headers})
     list(APPEND header_checks ${src})
 endforeach()
 add_library(header_check OBJECT ${header_checks})
-target_include_directories(header_check PRIVATE emulator)
+target_include_directories(header_check PRIVATE src)
 
 enable_testing()
 add_subdirectory(test)

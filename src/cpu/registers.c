@@ -24,7 +24,7 @@
 
 #include "cpu/decoder.h"
 #include "cpu/interrupts.h"
-#include "debugger/trace.h"
+#include "debug/trace.h"
 #include "uart/uart.h"
 
 void reg_write(Cpu *cpu, unsigned reg, uint16_t val, bool byte)

@@ -16,13 +16,13 @@
   along with this program. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "debugger/register_display.h"
+#include "debug/register_display.h"
 
 #include <stdint.h>
 #include <stdio.h>
 
 #include "cpu/registers.h"
-#include "debugger/debugger.h"
+#include "debug/debugger.h"
 #include "io.h"
 
 /*   Display all 16 registers

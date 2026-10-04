@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 #include "cpu/registers.h"
-#include "memory/memory.h"
+#include "mem/memory.h"
 
 void cpu_set_irq(Emulator *emu, unsigned irq, bool level)
 {

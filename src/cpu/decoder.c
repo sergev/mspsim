@@ -28,7 +28,7 @@
 #include "cpu/formatIII.h"
 #include "cpu/registers.h"
 #include "io.h"
-#include "memory/memory.h"
+#include "mem/memory.h"
 #include "utilities.h"
 
 // ##########+++ CPU Fetch Cycle  +++##########

@@ -34,7 +34,7 @@
 #include "cpu/decoder.h"
 #include "cpu/flag_handler.h"
 #include "cpu/registers.h"
-#include "memory/memory.h"
+#include "mem/memory.h"
 
 unsigned decode_formatII(Emulator *emu, uint16_t instruction, Listing *l)
 {

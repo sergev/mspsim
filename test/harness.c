@@ -5,7 +5,7 @@
 
 #include "asm.h"
 #include "io.h"
-#include "memory/memory.h"
+#include "mem/memory.h"
 #include "utilities.h"
 
 int test_failed;

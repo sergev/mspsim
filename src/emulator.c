@@ -6,8 +6,8 @@
 
 #include "cpu/interrupts.h"
 #include "cpu/registers.h"
-#include "debugger/debugger.h"
-#include "debugger/trace.h"
+#include "debug/debugger.h"
+#include "debug/trace.h"
 #include "loader/symbols.h"
 #include "uart/uart.h"
 

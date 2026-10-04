@@ -1,9 +1,9 @@
-#include "memory/memory.h"
+#include "mem/memory.h"
 
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "debugger/trace.h"
+#include "debug/trace.h"
 #include "uart/uart.h"
 
 /*

@@ -16,7 +16,7 @@
   along with this program. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "debugger/debugger.h"
+#include "debug/debugger.h"
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -26,11 +26,11 @@
 #include <strings.h>
 
 #include "cpu/registers.h"
-#include "debugger/disassembler.h"
-#include "debugger/register_display.h"
+#include "debug/disassembler.h"
+#include "debug/register_display.h"
 #include "io.h"
 #include "loader/symbols.h"
-#include "memory/memory.h"
+#include "mem/memory.h"
 #include "utilities.h"
 
 static bool is_cmd(const char *cmd, const char *name)

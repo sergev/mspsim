@@ -2,7 +2,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "debugger/debugger.h"
+#include "debug/debugger.h"
 #include "harness.h"
 #include "loader/loader.h"
 #include "loader/symbols.h"

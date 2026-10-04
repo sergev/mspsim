@@ -1,4 +1,4 @@
-#include "debugger/trace.h"
+#include "debug/trace.h"
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -7,7 +7,7 @@
 
 #include "cpu/interrupts.h"
 #include "cpu/registers.h"
-#include "debugger/disassembler.h"
+#include "debug/disassembler.h"
 #include "utilities.h"
 
 static FILE *trace_out(Emulator *emu)

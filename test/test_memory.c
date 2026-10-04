@@ -1,5 +1,5 @@
 #include "harness.h"
-#include "memory/memory.h"
+#include "mem/memory.h"
 
 TEST(word_access_ignores_bit0)
 {

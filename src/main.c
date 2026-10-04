@@ -17,7 +17,7 @@
 #include <unistd.h>
 
 #include "cpu/registers.h"
-#include "debugger/debugger.h"
+#include "debug/debugger.h"
 #include "emulator.h"
 #include "io.h"
 #include "linenoise.h"

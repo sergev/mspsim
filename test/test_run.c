@@ -1,6 +1,6 @@
-#include "debugger/debugger.h"
+#include "debug/debugger.h"
 #include "harness.h"
-#include "memory/memory.h"
+#include "mem/memory.h"
 #include "uart/uart.h"
 
 TEST(stop_register)

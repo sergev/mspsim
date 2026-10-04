@@ -1,6 +1,6 @@
 #include <string.h>
 
-#include "debugger/debugger.h"
+#include "debug/debugger.h"
 #include "harness.h"
 
 TEST(actions)

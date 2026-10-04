@@ -1,6 +1,6 @@
 #include <string.h>
 
-#include "debugger/trace.h"
+#include "debug/trace.h"
 #include "harness.h"
 
 TEST(loads_stores_and_registers)

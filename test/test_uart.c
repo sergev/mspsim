@@ -1,7 +1,7 @@
 #include <string.h>
 
 #include "harness.h"
-#include "memory/memory.h"
+#include "mem/memory.h"
 #include "uart/uart.h"
 
 static uint8_t read_byte(Emulator *emu, uint16_t addr)
