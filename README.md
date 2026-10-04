@@ -34,3 +34,5 @@ ctest --test-dir build
 ```
 
 The firmware is a raw binary image loaded at 0xC000.
+
+The console UART uses the USCI_A0 registers of the MSP430G2xx: a byte written to `UCA0TXBUF` (0x0067) goes to stdout, and stdin is read through `UCA0RXBUF` (0x0066), with `IFG2` (0x0003) and `IE2` (0x0001) flags as on the real chip. On a terminal, Ctrl-] stops the run. A write to 0x01FE stops the simulator, and the value written becomes the exit status.

@@ -28,25 +28,14 @@ Python, wxPython, the GUI, the websocket server, the LaunchPad-specific peripher
 
 ## Current state
 
-Steps 1–4 are done; the remaining steps keep their original numbers.
+Steps 1–5 are done; the remaining steps keep their original numbers.
 
 - **Build:** CMake builds the `msp430core` library, a temporary `mspsim` driver (`emulator/cli/main.c`) and the unit tests (`test/`, run with `ctest`). It is warning-free under `-Wall -Wextra`. Headers are self-contained; the `header_check` target enforces it.
 - **Removed:** the Python/wxPython GUI, the websocket server, MSVC support, and all peripherals (clock module, Timer_A, Port 1, USCI).
 - **CPU core:** the decoder, Format I/II/III instructions and flags work. `cpu->cycles` counts a flat 4 cycles per instruction.
 - **Interrupts:** `cpu->irq_pending` is a 16-bit mask of level-sensitive requests, raised with `cpu_set_irq()`. The NMI is edge-triggered. Interrupt entry clears SR except SCG0.
-- **Memory:** `emu->mem`, reached by the CPU only through `mem_read()`/`mem_write()` (`memory/memory.h`), with `ACC_FETCH` for opcode and extension words and `ACC_DATA` for everything else. Instructions use operand descriptors (`decode_operand()`, `operand_read()`, `operand_write()`), so each read-modify-write is one load and one store. The bus has no device dispatch yet; Step 5 adds it.
-- **Registers:** `cpu->r[16]` with named aliases; SR is a plain `uint16_t` with `SR_*` masks, so its reserved bits survive.
-- **Core state:** the core has no globals. `emu_create()`/`emu_destroy()` build and free an emulator; the SIGINT handler is in the front-end.
-- **Front-end hook:** about 30 call sites use `print_console()` (`emulator/io.h`). Many of them also `printf` the same text, so output appears twice.
-- **Debugger:** `exec_cmd()` in `debugger.c` parses commands.
-- **Loading:** only raw `.bin` images loaded at 0xC000. `cpu_reset()` hard-codes PC = 0xC000.
-- **Known ALU bugs, left for Step 9:** `SUB` never clears C; `ADDC`/`SUBC` compute C without the carry-in; `DADD` is a no-op; V on subtraction is suspect.
-
-## Remaining steps
-
-### Step 5 — Console UART
-
-A minimal memory-mapped device. Its registers are a subset of USCI_A0 at the MSP430G2xx addresses, so ordinary `msp430-elf-gcc` programs that print over UART run unmodified:
+- **Memory:** `emu->mem`, reached by the CPU only through `mem_read()`/`mem_write()` (`memory/memory.h`), with `ACC_FETCH` for opcode and extension words and `ACC_DATA` for everything else. Instructions use operand descriptors (`decode_operand()`, `operand_read()`, `operand_write()`), so each read-modify-write is one load and one store. Accesses below 0x0200 are dispatched to the device handlers.
+- **Console UART:** `uart/uart.c`, the USCI_A0 subset below, mirrored in `emu->mem`. Input and output go through the front-end hooks `uart_tx`/`uart_rx` (`io.h`). The temporary driver uses stdout and non-blocking stdin, raw on a tty, where Ctrl-] stops the run. Input is polled every 4096 cycles and on each `IFG2` read. Other USCI registers are plain memory.
 
 | Address | Register | Behaviour |
 |---|---|---|
@@ -55,10 +44,15 @@ A minimal memory-mapped device. Its registers are a subset of USCI_A0 at the MSP
 | 0x0003 | `IFG2` | bit 1 `UCA0TXIFG` always 1; bit 0 `UCA0RXIFG` = input byte available |
 | 0x0001 | `IE2` | bit 0 `UCA0RXIE` enables the RX interrupt (vector 0xFFEE) |
 
-- Other USCI registers (`UCA0CTL*`, `UCA0BR*`, …) are plain read/write memory. Baud-rate setup works but has no effect.
-- RX takes input from stdin, non-blocking, through the front-end's `uart_rx` callback. The UART is not tied to stdio itself. When stdin is a tty in run mode, it is put in raw mode, and Ctrl-] returns to the debugger.
-- **Bus dispatch:** `mem_read()`/`mem_write()` dispatch the UART addresses and the stop register to their handlers; everything else stays plain RAM.
-- **Simulator stop:** a byte or word write to `0x01FE` stops the simulator. The value written becomes the exit code, so test programs can terminate cleanly.
+- **Stop register:** a write to 0x01FE sets `emu->stopped` and `emu->exit_code`; the driver exits with that code.
+- **Registers:** `cpu->r[16]` with named aliases; SR is a plain `uint16_t` with `SR_*` masks, so its reserved bits survive.
+- **Core state:** the core has no globals. `emu_create()`/`emu_destroy()` build and free an emulator; the SIGINT handler is in the front-end.
+- **Front-end hook:** about 30 call sites use `print_console()` (`emulator/io.h`). Many of them also `printf` the same text, so output appears twice.
+- **Debugger:** `exec_cmd()` in `debugger.c` parses commands.
+- **Loading:** only raw `.bin` images loaded at 0xC000. `cpu_reset()` hard-codes PC = 0xC000.
+- **Known ALU bugs, left for Step 9:** `SUB` never clears C; `ADDC`/`SUBC` compute C without the carry-in; `DADD` is a no-op; V on subtraction is suspect.
+
+## Remaining steps
 
 ### Step 6 — CLI front-end and line editor
 
@@ -141,7 +135,7 @@ c014: 4fe5 0003        mov.b @r15, 3(r5)
 
 ## Commit order
 
-5 → 6 (first usable CLI) → 9 (unit tests, at least the instruction set) → 7 (tracing, using the test harness for golden traces) → 8 → 10.
+6 (first usable CLI) → 9 (unit tests, at least the instruction set) → 7 (tracing, using the test harness for golden traces) → 8 → 10.
 
 Each step is one or more commits that leave the tree building.
 

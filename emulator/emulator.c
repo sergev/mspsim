@@ -6,6 +6,7 @@
 
 #include "cpu/registers.h"
 #include "debugger/debugger.h"
+#include "uart/uart.h"
 
 Emulator *emu_create(void)
 {
@@ -18,9 +19,17 @@ Emulator *emu_create(void)
     memset(emu->mem + 0x1000, 0xFF, 0x100);
     memset(emu->mem + 0xC000, 0xFF, 0x4000);
 
-    cpu_reset(emu);
+    emu_reset(emu);
     emu->cpu->running = false;
     return emu;
+}
+
+void emu_reset(Emulator *emu)
+{
+    cpu_reset(emu);
+    uart_reset(emu);
+    emu->stopped   = false;
+    emu->exit_code = 0;
 }
 
 void emu_destroy(Emulator *emu)

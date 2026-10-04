@@ -55,7 +55,7 @@ bool exec_cmd(Emulator *emu, char *line, int len)
      */
     if (!strncasecmp("reset", cmd, sizeof "reset") ||
         !strncasecmp("restart", cmd, sizeof "restart")) {
-        cpu_reset(emu);
+        emu_reset(emu);
         display_registers(emu);
         disassemble(emu, cpu->pc, 1);
     }

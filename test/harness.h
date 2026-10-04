@@ -64,4 +64,8 @@ void step(Emulator *emu, int n);
 /* Text sent to print_console() since the test started. */
 extern char console_text[4096];
 
+/* Console UART: bytes sent since the test started, and the input still to come. */
+extern char uart_output[4096];
+extern const char *uart_input;
+
 #endif

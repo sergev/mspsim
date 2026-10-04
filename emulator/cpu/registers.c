@@ -24,6 +24,7 @@
 
 #include "cpu/decoder.h"
 #include "cpu/interrupts.h"
+#include "uart/uart.h"
 
 void reg_write(Cpu *cpu, unsigned reg, uint16_t val, bool byte)
 {
@@ -36,6 +37,7 @@ void cpu_step(Emulator *emu)
 {
     Cpu *cpu = emu->cpu;
 
+    uart_tick(emu);
     if (!(cpu->sr & SR_CPUOFF)) {
         decode(emu, fetch(emu), EXECUTE);
         cpu->cycles += 4; /* average; exact counts in Plan step 9 */

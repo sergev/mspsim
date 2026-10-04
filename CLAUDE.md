@@ -23,7 +23,7 @@ make test                               # all unit tests (ctest)
 - **Unit tests** live in `test/`, one executable per `test_*.c` file, each registered with ctest in `test/CMakeLists.txt` (add new files to its `foreach` list).
   - `harness.h` provides `TEST()`, `CHECK`/`CHECK_EQ`, `emu_new()`, `PROGRAM(addr, words...)` for hand-encoded instructions, `poke`/`peek` and `step`.
   - `emu_new()` wraps `emu_create()`; `poke`/`peek` go through the memory bus.
-  - It also defines `print_console`, which captures output into `console_text`.
+  - It also defines the front-end hooks: `print_console` captures into `console_text`, `uart_tx` into `uart_output`, and `uart_rx` reads from `uart_input` (set it before stepping).
   - Each file's `main()` lists its cases with `T(name)`.
 
 ## Firmware format
@@ -32,9 +32,11 @@ make test                               # all unit tests (ctest)
 
 ## Architecture
 
-**Front-end hook:** the core reports text through `print_console`, which is declared in `emulator/io.h` and implemented by the front-end (for now `emulator/cli/stub_io.c`). Many call sites still `printf` *and* `print_console` the same text, so output appears twice. Plan Step 6 fixes that.
+**Front-end hooks:** `emulator/io.h` declares functions the front-end implements: `print_console` for diagnostic text (for now in `emulator/cli/stub_io.c`), and `uart_tx`/`uart_rx` for the console UART (in `emulator/cli/main.c`: stdout, and non-blocking stdin in raw mode on a tty, where Ctrl-] stops the run). Many call sites still `printf` *and* `print_console` the same text, so output appears twice. Plan Step 6 fixes that.
 
-**Memory:** the 64 KB address space is `emu->mem`, all plain RAM. The CPU touches it only through the bus in `memory/memory.h`: `mem_read(emu, addr, size, kind)` and `mem_write(emu, addr, val, size)`, where size is 1 or 2 bytes, word accesses ignore address bit 0, and `kind` is `ACC_FETCH` (opcode and extension words, via `fetch()`) or `ACC_DATA`. The debugger and the loader may use `emu->mem` directly. There are no peripherals; the console UART and the stop register get dispatched in the bus in Plan Step 5.
+**Memory:** the 64 KB address space is `emu->mem`, all plain RAM. The CPU touches it only through the bus in `memory/memory.h`: `mem_read(emu, addr, size, kind)` and `mem_write(emu, addr, val, size)`, where size is 1 or 2 bytes, word accesses ignore address bit 0, and `kind` is `ACC_FETCH` (opcode and extension words, via `fetch()`) or `ACC_DATA`. The debugger and the loader may use `emu->mem` directly.
+
+**Devices:** data accesses below 0x0200 go through `io_read`/`io_write` in `memory.c`, which dispatch to the device handlers. The only device is the console UART (`uart/uart.c`), a USCI_A0 subset: `IE2` 0x0001 (RXIE), `IFG2` 0x0003 (TXIFG always 1, RXIFG = byte waiting), `UCA0RXBUF` 0x0066 and `UCA0TXBUF` 0x0067; its RX interrupt is vector 7 (0xFFEE). Device state is mirrored in `emu->mem`, so `dump` shows it. Input is polled every `UART_POLL_CYCLES` from `cpu_step()` and on each `IFG2` read. A write to 0x01FE sets `emu->stopped` and `emu->exit_code` and clears `cpu->running`. `emu_reset()` resets the CPU, the UART and the stop state.
 
 **Registers:** `cpu->r[16]` is aliased by `pc`, `sp`, `sr`, `cg2`, `r4`…`r15`. SR is a plain `uint16_t` with `SR_C`, `SR_Z`, `SR_N`, `SR_GIE`, `SR_CPUOFF`, … masks; use `set_flag()`. Register-mode writes go through `reg_write()`: byte writes clear the high byte, and R3 discards writes.
 

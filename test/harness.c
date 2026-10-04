@@ -9,6 +9,8 @@
 
 int test_failed;
 char console_text[4096];
+char uart_output[4096];
+const char *uart_input;
 
 static Emulator *current;
 
@@ -16,6 +18,22 @@ void print_console(Emulator *emu, const char *buf)
 {
     (void)emu;
     str_append(console_text, sizeof console_text, buf);
+}
+
+void uart_tx(Emulator *emu, uint8_t byte)
+{
+    char s[2] = { (char)byte, 0 };
+
+    (void)emu;
+    str_append(uart_output, sizeof uart_output, s);
+}
+
+int uart_rx(Emulator *emu)
+{
+    (void)emu;
+    if (uart_input == NULL || *uart_input == 0)
+        return -1;
+    return (unsigned char)*uart_input++;
 }
 
 Emulator *emu_new(void)
@@ -61,6 +79,8 @@ int run_tests(const Test *tests, size_t n, int argc, char **argv)
             continue;
         test_failed     = 0;
         console_text[0] = 0;
+        uart_output[0]  = 0;
+        uart_input      = NULL;
         tests[i].fn();
         emu_free();
         printf("%s %s\n", test_failed ? "FAIL" : "ok  ", tests[i].name);

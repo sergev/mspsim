@@ -22,6 +22,7 @@ add_library(msp430core STATIC
     emulator/cpu/formatIII.c
     emulator/cpu/interrupts.c
     emulator/memory/memory.c
+    emulator/uart/uart.c
     emulator/debugger/debugger.c
     emulator/debugger/disassembler.c
     emulator/debugger/register_display.c
