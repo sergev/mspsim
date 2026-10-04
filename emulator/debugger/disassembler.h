@@ -23,6 +23,6 @@
 
 #include "emulator.h"
 
-extern void disassemble(Emulator *emu, uint16_t start_addr, uint8_t times);
+void disassemble(Emulator *emu, uint16_t start_addr, uint32_t times);
 
 #endif

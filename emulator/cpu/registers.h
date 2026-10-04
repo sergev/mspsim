@@ -38,8 +38,6 @@ enum {
 };
 
 typedef struct Cpu {
-    bool running; /* CPU running or not */
-
     union {
         uint16_t r[16]; /* R0-R15 */
         struct {

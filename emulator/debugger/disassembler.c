@@ -18,38 +18,21 @@
 
 #include "debugger/disassembler.h"
 
-#include <stdbool.h>
 #include <stdint.h>
-#include <stdio.h>
 
 #include "cpu/decoder.h"
 #include "cpu/registers.h"
-#include "debugger/debugger.h"
 #include "io.h"
 
-void disassemble(Emulator *emu, uint16_t start_addr, uint8_t times)
+void disassemble(Emulator *emu, uint16_t start_addr, uint32_t times)
 {
-    Cpu *cpu           = emu->cpu;
-    Debugger *debugger = emu->debugger;
+    Cpu *cpu          = emu->cpu;
+    uint16_t saved_pc = cpu->pc;
 
-    uint16_t saved_pc = cpu->pc, opcode;
-    uint32_t i;
-
-    debugger->disassemble_mode = true;
-    cpu->pc                    = start_addr;
-
-    for (i = 0; i < times; i++) {
-        char addr_str[32] = { 0 };
-
-        sprintf(addr_str, "0x%04X:\t", cpu->pc);
-
-        printf("%s", addr_str);
-        print_console(emu, addr_str);
-
-        opcode = fetch(emu);
-        decode(emu, opcode, DISASSEMBLE);
+    cpu->pc = start_addr;
+    for (uint32_t i = 0; i < times; i++) {
+        emu_printf(emu, "0x%04X:\t", cpu->pc);
+        decode(emu, fetch(emu), DISASSEMBLE);
     }
-
-    debugger->disassemble_mode = false;
-    cpu->pc                    = saved_pc; // Restore PC
+    cpu->pc = saved_pc;
 }

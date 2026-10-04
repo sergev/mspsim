@@ -28,24 +28,29 @@ typedef enum { BYTE_STRIDE, WORD_STRIDE, DWORD_STRIDE } Stride;
 enum { MAX_BREAKPOINTS = 100 };
 
 typedef struct Debugger {
-    bool disassemble_mode;
-    bool debug_mode;
-    bool console_interface;
-    bool quit;
-
-    char mnemonic[50];
+    bool color; /* ANSI colours in the register display */
 
     uint16_t bp_addresses[MAX_BREAKPOINTS];
-    uint16_t current_bp;
     uint32_t num_bps;
 } Debugger;
+
+/* What the front-end does after a command. */
+typedef enum {
+    DBG_STAY, /* read the next command */
+    DBG_RUN,  /* run until something stops the CPU */
+    DBG_QUIT,
+} DebugAction;
 
 void setup_debugger(Emulator *emu);
 
 void dump_memory(Emulator *emu, uint16_t start_addr, uint8_t stride);
 
-bool exec_cmd(Emulator *emu, char *buf, int len);
+DebugAction exec_cmd(Emulator *emu, const char *line);
 
-void handle_breakpoints(Emulator *emu);
+/* Index of the breakpoint at addr, or -1. */
+int breakpoint_at(Emulator *emu, uint16_t addr);
+
+/* Print why the CPU stopped (emu->stop), then the registers and next instruction. */
+void report_stop(Emulator *emu);
 
 #endif

@@ -27,7 +27,6 @@
 #include "cpu/formatII.h"
 #include "cpu/formatIII.h"
 #include "cpu/registers.h"
-#include "debugger/debugger.h"
 #include "io.h"
 #include "memory/memory.h"
 #include "utilities.h"
@@ -45,11 +44,7 @@ uint16_t fetch(Emulator *emu)
 // ##########+++ CPU Decode Cycle +++##########
 void decode(Emulator *emu, uint16_t instruction, bool disassemble)
 {
-    Cpu *cpu           = emu->cpu;
-    Debugger *debugger = emu->debugger;
-
     uint8_t FormatId;
-    memset(debugger->mnemonic, 0, sizeof debugger->mnemonic);
 
     FormatId = (uint8_t)(instruction >> 12);
 
@@ -62,16 +57,13 @@ void decode(Emulator *emu, uint16_t instruction, bool disassemble)
     } else if (FormatId >= 0x4) {
         // format I (two operand) instruction
         decode_formatI(emu, instruction, disassemble);
+    } else if (disassemble) {
+        Listing listing;
+
+        listing_init(&listing, instruction);
+        print_listing(emu, &listing, "[INVALID INSTRUCTION]");
     } else {
-        char inv[100] = { 0 };
-
-        sprintf(inv, "%04X\t[INVALID INSTRUCTION]\n", instruction);
-        print_console(emu, inv);
-        printf("%s", inv);
-
-        // cpu->pc -= 2;
-        cpu->running         = false;
-        debugger->debug_mode = true;
+        emu->stop = EMU_ILLEGAL;
     }
 }
 
@@ -92,7 +84,7 @@ int16_t run_constant_generator(uint8_t source, uint8_t as_flag)
             break;
         }
         default: {
-            printf("Invalid as_flag for CG1\n");
+            /* not reached: callers check as_flag */
         }
         }
 
@@ -119,7 +111,7 @@ int16_t run_constant_generator(uint8_t source, uint8_t as_flag)
             break;
         }
         default: {
-            printf("Invalid as_flag for CG2\n");
+            /* not reached */
         }
         }
 
@@ -127,7 +119,7 @@ int16_t run_constant_generator(uint8_t source, uint8_t as_flag)
     }
 
     default: {
-        printf("Invalid source register for constant generation.\n");
+        /* not reached */
     }
     }
 
@@ -142,11 +134,7 @@ void listing_init(Listing *l, uint16_t instruction)
 
 void print_listing(Emulator *emu, Listing *l, const char *mnemonic)
 {
-    char text[128];
     int i;
-
-    if (!emu->debugger->debug_mode)
-        return;
 
     // Make little endian big endian
     for (i = 0; i + 4 <= (int)strlen(l->hex); i += 4) {
@@ -158,17 +146,7 @@ void print_listing(Emulator *emu, Listing *l, const char *mnemonic)
         l->hex[i + 3] = two;
     }
 
-    printf("%s", l->hex);
-    print_console(emu, l->hex);
-
-    for (i = strlen(l->hex); i < 12; i++) {
-        printf(" ");
-        print_console(emu, " ");
-    }
-
-    snprintf(text, sizeof text, "\t%s\t%s\n", mnemonic, l->ops);
-    printf("%s", text);
-    print_console(emu, text);
+    emu_printf(emu, "%-12s\t%s\t%s\n", l->hex, mnemonic, l->ops);
 }
 
 static uint16_t fetch_ext(Emulator *emu, Listing *l)

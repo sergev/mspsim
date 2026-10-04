@@ -31,13 +31,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <string.h>
 
 #include "cpu/decoder.h"
 #include "cpu/flag_handler.h"
 #include "cpu/registers.h"
-#include "debugger/debugger.h"
-#include "io.h"
 #include "utilities.h"
 
 void decode_formatI(Emulator *emu, uint16_t instruction, bool disassemble)

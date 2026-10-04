@@ -3,7 +3,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "cpu/registers.h"
 #include "uart/uart.h"
 
 /*
@@ -43,9 +42,8 @@ static void io_write(Emulator *emu, uint16_t addr, uint8_t val)
 
 static void stop(Emulator *emu, uint16_t code)
 {
-    emu->stopped      = true;
-    emu->exit_code    = code;
-    emu->cpu->running = false;
+    emu->stop      = EMU_PROGRAM;
+    emu->exit_code = code;
 }
 
 uint16_t mem_read(Emulator *emu, uint16_t addr, int size, Access kind)

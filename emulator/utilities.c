@@ -18,6 +18,7 @@
 
 #include "utilities.h"
 
+#include <errno.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -26,51 +27,36 @@
 #include "io.h"
 
 /**
- * @brief This function loads firmware from a binary file on disk into the
- * virtual memory of the emulated device at base virt_loc
- * @param file_name The file name of the binary to load into virtual memory
- * @param virt_loc The location in virtual memory to load the firmware
+ * @brief Load a raw binary image into emulated memory at addr
+ * @return The number of bytes loaded, or -1 with errno set
  */
-int load_firmware(Emulator *emu, char *file_name, uint16_t virt_addr)
+long load_binary(Emulator *emu, const char *file_name, uint16_t addr)
 {
-    uint32_t size, result;
-    char str[277] = { 0 };
+    FILE *fd = fopen(file_name, "rb");
+    long size;
 
-    sprintf(str, "Loading firmware: ( %s )\n", file_name);
-
-    printf("%s", str);
-    print_console(emu, str);
-
-    FILE *fd = fopen(file_name, "rb+");
-
-    if (fd == NULL) {
-        printf("Could not open %s, exiting.\n", file_name);
-        return 1;
-    }
+    if (fd == NULL)
+        return -1;
 
     /* obtain file size */
-    fseek(fd, 0, SEEK_END);
-    size = ftell(fd);
+    if (fseek(fd, 0, SEEK_END) < 0 || (size = ftell(fd)) < 0) {
+        fclose(fd);
+        return -1;
+    }
     rewind(fd);
 
-    // check size
-    if (size > 0x10000u - virt_addr) {
-        printf("SizeTooBig\n");
-        print_console(emu,
-                      "Flash Size too small to fit your binary. Quitting, please refresh to try "
-                      "again. Ensure you are compiling for the right MSP version.\n");
+    if (size > 0x10000L - addr) {
         fclose(fd);
-        return 1;
+        errno = EFBIG;
+        return -1;
     }
-
-    result = fread(emu->mem + virt_addr, 1, size, fd);
-
-    sprintf(str, "Placed %d bytes into flash\n\n", result);
-    printf("%s", str);
-    print_console(emu, str);
-
+    if (fread(emu->mem + addr, 1, size, fd) != (size_t)size) {
+        fclose(fd);
+        errno = EIO;
+        return -1;
+    }
     fclose(fd);
-    return 0;
+    return size;
 }
 
 /**
@@ -217,21 +203,22 @@ void reg_num_to_name(uint8_t number, char *name)
  */
 static const char *HelpStr =
     "**************************************************\n"
-    "*\t\tMSP430-Emulator\n*\n"
-    "* run\t\t\t[Run Program Until Breakpoint is Hit]\n"
+    "*\t\tmspsim debugger\n*\n"
+    "* run, c\t\t[Run Program Until Breakpoint is Hit]\n"
     "* step [N]\t\t[Step Into Instruction]\n"
     "* dump [HEX_ADDR|Rn]\t[Dump Memory direct or at register value]\n"
-    "* set [HEX_ADDR|Rn]\t[Set Memory or Register Location]\n"
+    "* set HEX_ADDR|Rn VAL\t[Set Memory Word or Register]\n"
     "* dis [N][HEX_ADDR]\t[Disassemble Instructions]\n"
     "* break ADDR\t\t[Set a Breakpoint]\n"
     "* bps\t\t\t[Display Breakpoints]\n"
     "* regs\t\t\t[Display Registers]\n"
-    "* CTRL+C\t\t[Pause Execution]\n"
+    "* trace on|off\t\t[Trace Executed Instructions]\n"
+    "* CTRL+C, CTRL+]\t[Pause Execution]\n"
     "* reset\t\t\t[Reset Machine]\n"
     "* quit\t\t\t[Exit program]\n"
     "**************************************************\n";
 
 void display_help(Emulator *emu)
 {
-    print_console(emu, HelpStr);
+    emu_printf(emu, "%s", HelpStr);
 }

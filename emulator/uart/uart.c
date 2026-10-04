@@ -15,10 +15,12 @@ static void update_irq(Emulator *emu)
 /* Move the next input byte, if any, into RXBUF. */
 static void poll_input(Emulator *emu)
 {
-    if (emu->mem[IFG2] & UCA0RXIFG)
+    if ((emu->mem[IFG2] & UCA0RXIFG) || emu->uart_eof)
         return;
 
     int c = uart_rx(emu);
+    if (c == UART_EOF)
+        emu->uart_eof = true;
     if (c < 0)
         return;
     emu->mem[UCA0RXBUF] = c;
@@ -31,6 +33,11 @@ void uart_reset(Emulator *emu)
     emu->mem[IFG2]    = (emu->mem[IFG2] & ~UCA0RXIFG) | UCA0TXIFG;
     emu->uart_poll_at = 0;
     update_irq(emu);
+}
+
+bool uart_may_interrupt(Emulator *emu)
+{
+    return (emu->mem[IE2] & UCA0RXIE) && !emu->uart_eof;
 }
 
 void uart_tick(Emulator *emu)

@@ -28,7 +28,7 @@ install: all
 	cmake --install build --prefix "$$prefix"
 
 format:
-	git ls-files '*.c' '*.h' | xargs clang-format -i
+	git ls-files '*.c' '*.h' ':!third_party' | xargs clang-format -i
 
 clean:
 	rm -rf build

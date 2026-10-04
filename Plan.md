@@ -28,14 +28,14 @@ Python, wxPython, the GUI, the websocket server, the LaunchPad-specific peripher
 
 ## Current state
 
-Steps 1–5 are done; the remaining steps keep their original numbers.
+Steps 1–6 are done; the remaining steps keep their original numbers.
 
-- **Build:** CMake builds the `msp430core` library, a temporary `mspsim` driver (`emulator/cli/main.c`) and the unit tests (`test/`, run with `ctest`). It is warning-free under `-Wall -Wextra`. Headers are self-contained; the `header_check` target enforces it.
+- **Build:** CMake builds the `msp430core` library, vendored linenoise, the `mspsim` front-end (`src/main.c`) and the tests (`test/`, run with `ctest`). It is warning-free under `-Wall -Wextra`. Headers are self-contained; the `header_check` target enforces it.
 - **Removed:** the Python/wxPython GUI, the websocket server, MSVC support, and all peripherals (clock module, Timer_A, Port 1, USCI).
 - **CPU core:** the decoder, Format I/II/III instructions and flags work. `cpu->cycles` counts a flat 4 cycles per instruction.
 - **Interrupts:** `cpu->irq_pending` is a 16-bit mask of level-sensitive requests, raised with `cpu_set_irq()`. The NMI is edge-triggered. Interrupt entry clears SR except SCG0.
 - **Memory:** `emu->mem`, reached by the CPU only through `mem_read()`/`mem_write()` (`memory/memory.h`), with `ACC_FETCH` for opcode and extension words and `ACC_DATA` for everything else. Instructions use operand descriptors (`decode_operand()`, `operand_read()`, `operand_write()`), so each read-modify-write is one load and one store. Accesses below 0x0200 are dispatched to the device handlers.
-- **Console UART:** `uart/uart.c`, the USCI_A0 subset below, mirrored in `emu->mem`. Input and output go through the front-end hooks `uart_tx`/`uart_rx` (`io.h`). The temporary driver uses stdout and non-blocking stdin, raw on a tty, where Ctrl-] stops the run. Input is polled every 4096 cycles and on each `IFG2` read. Other USCI registers are plain memory.
+- **Console UART:** `uart/uart.c`, the USCI_A0 subset below, mirrored in `emu->mem`. Input and output go through the front-end hooks `uart_tx`/`uart_rx` (`io.h`). The front-end uses stdout and non-blocking stdin, raw on a tty during a run. Input is polled every 4096 cycles and on each `IFG2` read. Other USCI registers are plain memory.
 
 | Address | Register | Behaviour |
 |---|---|---|
@@ -44,41 +44,15 @@ Steps 1–5 are done; the remaining steps keep their original numbers.
 | 0x0003 | `IFG2` | bit 1 `UCA0TXIFG` always 1; bit 0 `UCA0RXIFG` = input byte available |
 | 0x0001 | `IE2` | bit 0 `UCA0RXIE` enables the RX interrupt (vector 0xFFEE) |
 
-- **Stop register:** a write to 0x01FE sets `emu->stopped` and `emu->exit_code`; the driver exits with that code.
+- **Stop register:** a write to 0x01FE sets `emu->stop = EMU_PROGRAM` and `emu->exit_code`.
 - **Registers:** `cpu->r[16]` with named aliases; SR is a plain `uint16_t` with `SR_*` masks, so its reserved bits survive.
-- **Core state:** the core has no globals. `emu_create()`/`emu_destroy()` build and free an emulator; the SIGINT handler is in the front-end.
-- **Front-end hook:** about 30 call sites use `print_console()` (`emulator/io.h`). Many of them also `printf` the same text, so output appears twice.
-- **Debugger:** `exec_cmd()` in `debugger.c` parses commands.
+- **Core state:** the core has no globals. `emu_create()`/`emu_destroy()`/`emu_reset()` manage an emulator; `emu_run()` runs it until a `StopReason`.
+- **Front-end:** `src/main.c`, with `getopt_long` options, batch mode and a linenoise debugger prompt. The exit status reflects the stop reason. Core output goes through `emu_printf()` and the `print_console()` hook: stderr in batch mode, stdout at the prompt. Without `-b`, a raw image is loaded at 0xC000, and ELF/Intel HEX images are rejected until Step 8. `-t`, `-o` and `trace on|off` set `emu->trace`/`emu->trace_file`, which do nothing until Step 7.
+- **Debugger:** `exec_cmd()` in `debugger.c` runs one command and returns stay/run/quit.
 - **Loading:** only raw `.bin` images loaded at 0xC000. `cpu_reset()` hard-codes PC = 0xC000.
 - **Known ALU bugs, left for Step 9:** `SUB` never clears C; `ADDC`/`SUBC` compute C without the carry-in; `DADD` is a no-op; V on subtraction is suspect.
 
 ## Remaining steps
-
-### Step 6 — CLI front-end and line editor
-
-1. Vendor linenoise into `third_party/linenoise/`, with its license file, and build it as part of the CMake project.
-2. Write `src/main.c`, with argument parsing via `getopt_long`:
-   ```
-   mspsim [options] firmware
-     -b, --binary ADDR     raw binary loaded at ADDR (default: auto-detect ELF / Intel HEX)
-     -g, --debug           start paused in the interactive debugger
-     -n, --max-cycles N    stop after N cycles
-     -t, --trace           trace executed instructions, register changes, loads/stores
-     -o, --trace-file F    write trace to F instead of stderr
-     -q, --quiet           no banner/diagnostics, only UART output
-   ```
-3. **Run loop:** `emu_run(emu, max_cycles)` runs at full speed. Without a clock module, there is no wall-clock throttling.
-4. **Exit conditions:**
-   - quit;
-   - `--max-cycles` reached;
-   - the stop register is written;
-   - an illegal instruction;
-   - `CPUOFF` with `GIE` clear, or with GIE set but no possible wake-up source (stdin at EOF).
-
-   The exit status reflects which one occurred.
-5. **Interactive debugger:** keep the `exec_cmd` commands (`step`, `run`, `dis`, `dump`, `set`, `break`, `bps`, `regs`, `reset`, `quit`, `help`). Use linenoise for the prompt, with history. Add `trace on|off` to toggle tracing at runtime. SIGINT during `run` returns to the prompt.
-6. Route diagnostic and debugger output through one `emu_printf()`, replacing the `sprintf`+`printf`+`print_console` triples. Make `register_display.c` coloured only when stdout is a tty.
-7. **Check:** a hand-assembled image that writes "Hello\n" to `UCA0TXBUF` prints it, then exits via the stop register.
 
 ### Step 7 — Tracing
 
@@ -135,7 +109,7 @@ c014: 4fe5 0003        mov.b @r15, 3(r5)
 
 ## Commit order
 
-6 (first usable CLI) → 9 (unit tests, at least the instruction set) → 7 (tracing, using the test harness for golden traces) → 8 → 10.
+9 (unit tests, at least the instruction set) → 7 (tracing, using the test harness for golden traces) → 8 → 10.
 
 Each step is one or more commits that leave the tree building.
 

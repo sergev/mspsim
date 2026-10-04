@@ -59,7 +59,7 @@ void display_registers(Emulator *emu)
     const char *r14_name = "R14";
     const char *r15_name = "R15";
 
-    if (debugger->console_interface) {
+    if (debugger->color) {
         red   = (char *)"\x1b[31;1m";
         green = (char *)"\x1b[32;1m";
         cyan  = (char *)"\x1b[36;1m";
@@ -140,6 +140,5 @@ void display_registers(Emulator *emu)
 
             cyan, v_flag, decor_col, value_col, (cpu->sr & SR_V) != 0);
 
-    printf("%s", full);
-    print_console(emu, full);
+    emu_printf(emu, "%s", full);
 }

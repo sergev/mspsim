@@ -30,13 +30,11 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <string.h>
 
 #include "cpu/decoder.h"
 #include "cpu/flag_handler.h"
 #include "cpu/registers.h"
 #include "memory/memory.h"
-#include "utilities.h"
 
 void decode_formatII(Emulator *emu, uint16_t instruction, bool disassemble)
 {
@@ -60,7 +58,7 @@ void decode_formatII(Emulator *emu, uint16_t instruction, bool disassemble)
         char mnemonic[16];
 
         if (opcode > 6) {
-            printf("Unknown Single operand instruction.\n");
+            print_listing(emu, &listing, "[INVALID INSTRUCTION]");
             return;
         }
         /* SWPB, SXT, CALL and RETI have no byte form */
@@ -189,7 +187,7 @@ void decode_formatII(Emulator *emu, uint16_t instruction, bool disassemble)
         break;
     }
     default: {
-        printf("Unknown Single operand instruction.\n");
+        emu->stop = EMU_ILLEGAL;
     }
 
     } // # End of Switch

@@ -10,8 +10,8 @@ A command-line simulator of the classic MSP430 CPU, written in C. The core is fo
 
 ```bash
 make                                    # or: cmake -B build && cmake --build build
-./build/mspsim fw.bin [max_steps]   # temporary driver (emulator/cli/main.c): runs, then dumps registers
-make test                               # all unit tests (ctest)
+./build/mspsim [-g] [-q] [-n N] [-b ADDR] fw.bin   # front-end: src/main.c
+make test                               # all tests (ctest), including test/cli_test.sh
 ./build/test/test_interrupts [case_name] # one test file, or a single case
 ```
 
@@ -19,24 +19,30 @@ make test                               # all unit tests (ctest)
 - **Headers are self-contained, and include order never matters**, so clang-format can sort includes freely.
   - The `header_check` target compiles every header on its own, included twice.
   - Include by path from `emulator/` (e.g. `"cpu/registers.h"`, never `"../"`).
-  - Every file includes what it uses. There is no umbrella header: `emulator.h` declares the `Emulator`/`Cpu`/`Debugger` types plus `emu_create()`/`emu_destroy()`.
+  - Every file includes what it uses. There is no umbrella header: `emulator.h` declares the `Emulator`/`Cpu`/`Debugger` types, `StopReason`, and `emu_create()`/`emu_destroy()`/`emu_reset()`/`emu_run()`.
 - **Unit tests** live in `test/`, one executable per `test_*.c` file, each registered with ctest in `test/CMakeLists.txt` (add new files to its `foreach` list).
   - `harness.h` provides `TEST()`, `CHECK`/`CHECK_EQ`, `emu_new()`, `PROGRAM(addr, words...)` for hand-encoded instructions, `poke`/`peek` and `step`.
   - `emu_new()` wraps `emu_create()`; `poke`/`peek` go through the memory bus.
   - It also defines the front-end hooks: `print_console` captures into `console_text`, `uart_tx` into `uart_output`, and `uart_rx` reads from `uart_input` (set it before stepping).
   - Each file's `main()` lists its cases with `T(name)`.
+  - `test/cli_test.sh` runs the `mspsim` binary on hand-assembled images and checks stdout and exit statuses (ctest `cli`).
+- `third_party/linenoise/` is vendored unmodified (BSD-2-Clause); `make format` skips it.
 
 ## Firmware format
 
-`load_firmware()` (`emulator/utilities.c`) reads a **raw binary** image and loads it at 0xC000, up to 16 KB. `cpu_reset()` hard-codes PC = 0xC000.
+`load_binary()` (`emulator/utilities.c`) loads a **raw binary** image at the `-b` address (default 0xC000); it prints nothing and returns -1 with `errno` set on failure. ELF and Intel HEX are rejected until Plan Step 8. `cpu_reset()` hard-codes PC = 0xC000.
 
 ## Architecture
 
-**Front-end hooks:** `emulator/io.h` declares functions the front-end implements: `print_console` for diagnostic text (for now in `emulator/cli/stub_io.c`), and `uart_tx`/`uart_rx` for the console UART (in `emulator/cli/main.c`: stdout, and non-blocking stdin in raw mode on a tty, where Ctrl-] stops the run). Many call sites still `printf` *and* `print_console` the same text, so output appears twice. Plan Step 6 fixes that.
+**Front-end hooks:** `emulator/io.h` declares functions the front-end (`src/main.c`) implements: `print_console` for diagnostic and debugger text, and `uart_tx`/`uart_rx` for the console UART (`uart_rx` returns -1 when no byte is ready and `UART_EOF` at end of input). The core never calls `printf`; it prints with `emu_printf()` (`io.c`), which goes through `print_console`.
+
+**Front-end:** `src/main.c` parses options with `getopt_long`, then runs in batch mode, or in the interactive debugger with `-g` (a linenoise prompt; an empty line repeats the last command). UART output goes to stdout. Other text goes to stderr in batch mode (`-q` drops it) and to stdout at the debugger prompt. During a run, a tty stdin is raw; Ctrl-] or SIGINT set `emu->break_request`. Ctrl-] enters the debugger; in batch mode SIGINT exits with 130. Exit statuses: the stop-register value, 124 cycle limit, 125 asleep with no wake-up, 130 interrupted, 132 illegal instruction, 1 load error, 2 usage.
+
+**Run loop:** `emu_run(emu, max_cycles)` (`emulator.c`) steps until `emu->stop` is set: by the stop register, an illegal instruction (PC is left on it), a breakpoint (checked after each step, so resuming from one works), a break request, the cycle limit, or `CPUOFF` with no possible wake-up (GIE clear, or no RX interrupt enabled, or stdin at EOF). While asleep with a possible wake-up it skips ahead to the next input poll.
 
 **Memory:** the 64 KB address space is `emu->mem`, all plain RAM. The CPU touches it only through the bus in `memory/memory.h`: `mem_read(emu, addr, size, kind)` and `mem_write(emu, addr, val, size)`, where size is 1 or 2 bytes, word accesses ignore address bit 0, and `kind` is `ACC_FETCH` (opcode and extension words, via `fetch()`) or `ACC_DATA`. The debugger and the loader may use `emu->mem` directly.
 
-**Devices:** data accesses below 0x0200 go through `io_read`/`io_write` in `memory.c`, which dispatch to the device handlers. The only device is the console UART (`uart/uart.c`), a USCI_A0 subset: `IE2` 0x0001 (RXIE), `IFG2` 0x0003 (TXIFG always 1, RXIFG = byte waiting), `UCA0RXBUF` 0x0066 and `UCA0TXBUF` 0x0067; its RX interrupt is vector 7 (0xFFEE). Device state is mirrored in `emu->mem`, so `dump` shows it. Input is polled every `UART_POLL_CYCLES` from `cpu_step()` and on each `IFG2` read. A write to 0x01FE sets `emu->stopped` and `emu->exit_code` and clears `cpu->running`. `emu_reset()` resets the CPU, the UART and the stop state.
+**Devices:** data accesses below 0x0200 go through `io_read`/`io_write` in `memory.c`, which dispatch to the device handlers. The only device is the console UART (`uart/uart.c`), a USCI_A0 subset: `IE2` 0x0001 (RXIE), `IFG2` 0x0003 (TXIFG always 1, RXIFG = byte waiting), `UCA0RXBUF` 0x0066 and `UCA0TXBUF` 0x0067; its RX interrupt is vector 7 (0xFFEE). Device state is mirrored in `emu->mem`, so `dump` shows it. Input is polled every `UART_POLL_CYCLES` from `cpu_step()` and on each `IFG2` read. A write to 0x01FE sets `emu->stop = EMU_PROGRAM` and `emu->exit_code`. `emu_reset()` resets the CPU, the UART and the stop state.
 
 **Registers:** `cpu->r[16]` is aliased by `pc`, `sp`, `sr`, `cg2`, `r4`…`r15`. SR is a plain `uint16_t` with `SR_C`, `SR_Z`, `SR_N`, `SR_GIE`, `SR_CPUOFF`, … masks; use `set_flag()`. Register-mode writes go through `reg_write()`: byte writes clear the high byte, and R3 discards writes.
 
@@ -48,4 +54,4 @@ make test                               # all unit tests (ctest)
 - Operands: `decode_operand()` (`decoder.c`) resolves an addressing mode into an `Operand` (`OPND_REG`, `OPND_MEM` with an address, or `OPND_CONST` for immediates and the constant generators), fetching its extension word and applying `@Rn+`. Instructions then use `operand_read()`/`operand_write()`, so a read-modify-write does one load and one store. Format I reads the source before decoding the destination, as hardware does.
 - The disassembler runs the same decode path with `DISASSEMBLE` instead of `EXECUTE`: no data accesses, no autoincrement. The text is collected in a `Listing` and printed by `print_listing()`. Use `str_append()` (`utilities.h`) for text, not `strncat`.
 
-**Debugger:** `exec_cmd()` in `debugger/debugger.c` parses and runs the debugger commands (step, run, dis, dump, set, break, bps, regs, reset, quit, help). The SIGINT handler lives in the front-end (`cli/main.c`); the core keeps no global state.
+**Debugger:** `exec_cmd()` in `debugger/debugger.c` runs one command (step, run/c, dis, dump, set, break, bps, regs, trace, reset, quit, help) and returns `DBG_STAY`, `DBG_RUN` or `DBG_QUIT`; the front-end does the running. `report_stop()` prints why the CPU stopped. The core keeps no global state.

@@ -39,7 +39,13 @@ void cpu_step(Emulator *emu)
 
     uart_tick(emu);
     if (!(cpu->sr & SR_CPUOFF)) {
+        uint16_t pc = cpu->pc;
+
         decode(emu, fetch(emu), EXECUTE);
+        if (emu->stop == EMU_ILLEGAL) {
+            cpu->pc = pc;
+            return;
+        }
         cpu->cycles += 4; /* average; exact counts in Plan step 9 */
     } else {
         cpu->cycles += 1;

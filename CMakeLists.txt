@@ -13,6 +13,7 @@ add_compile_options(-Wall -Wextra)
 
 add_library(msp430core STATIC
     emulator/emulator.c
+    emulator/io.c
     emulator/utilities.c
     emulator/cpu/registers.c
     emulator/cpu/decoder.c
@@ -29,11 +30,12 @@ add_library(msp430core STATIC
 )
 target_include_directories(msp430core PUBLIC emulator)
 
-add_executable(mspsim
-    emulator/cli/main.c
-    emulator/cli/stub_io.c
-)
-target_link_libraries(mspsim PRIVATE msp430core)
+# Vendored line editor, BSD-2-Clause.
+add_library(linenoise STATIC third_party/linenoise/linenoise.c)
+target_include_directories(linenoise PUBLIC third_party/linenoise)
+
+add_executable(mspsim src/main.c)
+target_link_libraries(mspsim PRIVATE msp430core linenoise)
 install(TARGETS mspsim RUNTIME DESTINATION bin)
 
 # Every header must compile on its own (and survive double inclusion).

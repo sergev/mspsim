@@ -32,274 +32,232 @@
 #include "memory/memory.h"
 #include "utilities.h"
 
-bool exec_cmd(Emulator *emu, char *line, int len)
+static bool is_cmd(const char *cmd, const char *name)
 {
-    (void)len;
+    return strcasecmp(cmd, name) == 0;
+}
+
+/* Registers and the next instruction. */
+static void show_state(Emulator *emu)
+{
+    display_registers(emu);
+    disassemble(emu, emu->cpu->pc, 1);
+}
+
+void report_stop(Emulator *emu)
+{
+    Cpu *cpu = emu->cpu;
+
+    switch (emu->stop) {
+    case EMU_RUNNING:
+        return;
+    case EMU_PROGRAM:
+        emu_printf(emu, "\n\t[Stopped by program, exit code %u]\n", emu->exit_code);
+        break;
+    case EMU_BREAKPOINT:
+        emu_printf(emu, "\n\t[Breakpoint %d hit]\n", breakpoint_at(emu, cpu->pc) + 1);
+        break;
+    default:
+        emu_printf(emu, "\n\t[%s]\n", emu_stop_reason(emu->stop));
+        break;
+    }
+    show_state(emu);
+}
+
+DebugAction exec_cmd(Emulator *emu, const char *line)
+{
     Cpu *cpu      = emu->cpu;
     Debugger *deb = emu->debugger;
 
-    char cmd[100]    = { 0 };
-    unsigned int op1 = 0, op2 = 0;
+    char cmd[100] = { 0 }, arg[100] = { 0 };
+    unsigned int op1 = 0;
     int ops;
 
-    char bogus1[100] = { 0 };
-    uint32_t bogus2 = 0, bogus3 = 0;
-
-    ops = sscanf(line, "%s %u %u", cmd, &op1, &op2);
-    // printf("Got %s, %u, %u - ops %d\n", cmd, op1, op2, ops);
+    ops = sscanf(line, "%99s %99s", cmd, arg);
+    if (ops < 1)
+        return DBG_STAY;
 
     /* RESET / RESTART
 
        Resets the entire virtual machine to it's starting state.
        Puts the starting address back into Program Counter
      */
-    if (!strncasecmp("reset", cmd, sizeof "reset") ||
-        !strncasecmp("restart", cmd, sizeof "restart")) {
+    if (is_cmd(cmd, "reset") || is_cmd(cmd, "restart")) {
         emu_reset(emu);
-        display_registers(emu);
-        disassemble(emu, cpu->pc, 1);
+        show_state(emu);
     }
 
     // s [NUM], step NUM instructions forward, defaults to 1 //
-    else if (!strncasecmp("s", cmd, sizeof "s") || !strncasecmp("step", cmd, sizeof "step")) {
+    else if (is_cmd(cmd, "s") || is_cmd(cmd, "step")) {
         uint32_t steps = 1; // 1 step by default
-        uint32_t i;
 
-        if (ops == 2) {
+        if (ops == 2 && sscanf(arg, "%u", &op1) == 1)
             steps = op1;
-        }
 
-        for (i = 0; i < steps; i++) {
+        emu->stop = EMU_RUNNING;
+        for (uint32_t i = 0; i < steps && emu->stop == EMU_RUNNING; i++)
             cpu_step(emu);
-        }
-        //      display_registers(emu);
-        disassemble(emu, cpu->pc, 1);
+        if (emu->stop != EMU_RUNNING)
+            report_stop(emu);
+        else
+            disassemble(emu, cpu->pc, 1);
     }
 
     // Quit program //
-    else if (!strncasecmp("quit", cmd, sizeof "quit") || !strncasecmp("q", cmd, sizeof "q")) {
-        // This flag stops the main loop in main.c
-        deb->quit = true;
+    else if (is_cmd(cmd, "quit") || is_cmd(cmd, "q")) {
+        return DBG_QUIT;
     }
 
     // run the program until a breakpoint is hit //
-    else if (!strncasecmp("run", cmd, sizeof "run") || !strncasecmp("r", cmd, sizeof "r")) {
-        cpu->running    = true;
-        deb->debug_mode = false;
+    else if (is_cmd(cmd, "run") || is_cmd(cmd, "r") || is_cmd(cmd, "c") ||
+             is_cmd(cmd, "continue")) {
+        return DBG_RUN;
     }
 
     // Display disassembly of N at HEX_ADDR: dis [N] [HEX_ADDR] //
-    else if (!strncasecmp("disas", cmd, sizeof "disas") || !strncasecmp("dis", cmd, sizeof "dis") ||
-             !strncasecmp("disassemble", cmd, sizeof "disassemble")) {
-        uint16_t start_addr = cpu->pc;
-        uint32_t num        = 10;
+    else if (is_cmd(cmd, "disas") || is_cmd(cmd, "dis") || is_cmd(cmd, "disassemble")) {
+        unsigned int num = 10, start_addr = cpu->pc;
 
-        ops = sscanf(line, "%s %u %X", bogus1, &bogus2, &bogus3);
-
-        if (ops == 2) {
-            sscanf(line, "%s %u", bogus1, &num);
-        } else if (ops == 3) {
-            sscanf(line, "%s %u %X", bogus1, &num, (unsigned int *)&start_addr);
-        }
+        sscanf(line, "%*s %u %X", &num, &start_addr);
         disassemble(emu, start_addr, num);
     }
 
-    else if (!strncasecmp("dump", cmd, sizeof "dump")) {
-        char str[100]       = { 0 };
-        uint16_t start_addr = cpu->pc;
-        uint32_t stride;
-
-        sscanf(line, "%s %s", bogus1, str);
+    // dump [HEX_ADDR|Rn] //
+    else if (is_cmd(cmd, "dump")) {
+        unsigned int start_addr = cpu->pc;
 
         // Is it a direct address or an adress in a register being spec'd
-        if (str[0] >= '0' && str[0] <= '9') {
-            sscanf(str, "%X", (unsigned int *)&start_addr);
-        } else if (str[0] == '%' || str[0] == 'r' || str[0] == 'R') {
-            int reg = reg_name_to_num(str);
-            if (reg >= 0)
-                start_addr = cpu->r[reg];
+        if (arg[0] >= '0' && arg[0] <= '9') {
+            sscanf(arg, "%X", &start_addr);
+        } else if (arg[0]) {
+            int reg = reg_name_to_num(arg);
+            if (reg < 0) {
+                emu_printf(emu, "\t[No register %s]\n", arg);
+                return DBG_STAY;
+            }
+            start_addr = cpu->r[reg];
         }
-
-        stride = BYTE_STRIDE;
-        dump_memory(emu, start_addr, stride);
+        dump_memory(emu, start_addr, BYTE_STRIDE);
     }
 
-    // Set REG/LOC VALUE
-    else if (!strncasecmp("set", cmd, sizeof "set")) {
-        uint16_t value            = 0;
-        char reg_name_or_addr[50] = { 0 };
-        char *addr_str            = NULL;
+    // set [HEX_ADDR|Rn] HEX_VALUE //
+    else if (is_cmd(cmd, "set")) {
+        unsigned int value = 0;
 
-        // print_console(emu, "Not yet implemented.\n");
-
-        sscanf(line, "%s %s %X", bogus1, reg_name_or_addr, (unsigned int *)&value);
-
-        // printf("Got %s and %X\n", reg_name_or_addr, value);
+        if (sscanf(line, "%*s %*s %X", &value) != 1) {
+            emu_printf(emu, "\t[Usage: set HEX_ADDR|Rn HEX_VALUE]\n");
+            return DBG_STAY;
+        }
 
         // Figure out if the value given is a reg name or addr
-        int res = reg_name_to_num(reg_name_or_addr);
+        int res = reg_name_to_num(arg);
 
         if (res != -1) { // If its a reg name
-            printf("In reg part...\n");
-
             cpu->r[res] = value;
-
-            display_registers(emu);
-            disassemble(emu, cpu->pc, 1);
+            show_state(emu);
         } else {
-            addr_str = reg_name_or_addr;
-            printf("In addr part...\n");
-
-            uint16_t virtual_addr = (uint16_t)strtol(addr_str, NULL, 0);
-
-            mem_write(emu, virtual_addr, value, 2);
+            mem_write(emu, strtol(arg, NULL, 16), value, 2);
         }
     }
 
     // break BREAKPOINT_ADDRESS - set breakpoint //
-    else if (!strncasecmp("break", cmd, sizeof "break")) {
+    else if (is_cmd(cmd, "break") || is_cmd(cmd, "b")) {
+        unsigned int addr;
+
         if (deb->num_bps >= MAX_BREAKPOINTS) {
-            // printf("Breakpoints are full.\n");
-            print_console(emu, "Breakpoints are full.\n");
-
-            return true;
-        }
-
-        ops             = sscanf(line, "%s %X", bogus1, &bogus2);
-        char entry[100] = { 0 };
-
-        if (ops == 2) {
-            sscanf(line, "%s %X", bogus1, (unsigned int *)&deb->bp_addresses[deb->num_bps]);
-
-            sprintf(entry, "\n\t[Breakpoint [%d] Set]\n", deb->num_bps + 1);
-            // printf("%s", entry);
-            print_console(emu, entry);
-
-            ++deb->num_bps;
+            emu_printf(emu, "Breakpoints are full.\n");
+        } else if (ops == 2 && sscanf(arg, "%X", &addr) == 1) {
+            deb->bp_addresses[deb->num_bps++] = addr;
+            emu_printf(emu, "\t[Breakpoint [%d] Set]\n", deb->num_bps);
         } else {
-            // printf("error\n");
-            print_console(emu, "error\n");
+            emu_printf(emu, "\t[Usage: break HEX_ADDR]\n");
         }
     }
 
     // Display all breakpoints //
-    else if (!strncasecmp("bps", cmd, sizeof "bps")) {
-        char entry[100] = { 0 };
-
-        if (deb->num_bps > 0) {
-            deb->current_bp = 0;
-
-            while (deb->current_bp < deb->num_bps) {
-                sprintf(entry, "\t[%d] 0x%04X\n", deb->current_bp + 1,
-                        deb->bp_addresses[deb->current_bp]);
-
-                // printf("%s", entry);
-                print_console(emu, entry);
-
-                ++deb->current_bp;
-            }
-        } else {
-            // printf("You have not set any breakpoints!\n");
-            print_console(emu, "You have not set any breakpoints!\n");
-        }
+    else if (is_cmd(cmd, "bps")) {
+        if (deb->num_bps == 0)
+            emu_printf(emu, "You have not set any breakpoints!\n");
+        for (uint32_t i = 0; i < deb->num_bps; i++)
+            emu_printf(emu, "\t[%d] 0x%04X\n", i + 1, deb->bp_addresses[i]);
     }
 
     // Display registers //
-    else if (!strncasecmp("regs", cmd, sizeof "regs")) {
-        display_registers(emu);
-        disassemble(emu, cpu->pc, 1);
+    else if (is_cmd(cmd, "regs")) {
+        show_state(emu);
+    }
+
+    // trace on|off //
+    else if (is_cmd(cmd, "trace")) {
+        if (is_cmd(arg, "on"))
+            emu->trace = true;
+        else if (is_cmd(arg, "off"))
+            emu->trace = false;
+        else if (arg[0])
+            emu_printf(emu, "\t[Usage: trace on|off]\n");
+        emu_printf(emu, "\t[Tracing is %s]\n", emu->trace ? "on" : "off");
     }
 
     // help, display a list of debugger cmds //
-    else if (!strncasecmp("help", cmd, sizeof "help") || !strncasecmp("h", cmd, sizeof "h")) {
+    else if (is_cmd(cmd, "help") || is_cmd(cmd, "h")) {
         display_help(emu);
     }
 
-    // End the line loop, next instruction
     else {
-        print_console(emu, "\t[Invalid command, type \"help\".]\n");
+        emu_printf(emu, "\t[Invalid command, type \"help\".]\n");
     }
 
-    return true;
+    return DBG_STAY;
 }
 
 // ##########+++ Dump Memory Function +++##########
 void dump_memory(Emulator *emu, uint16_t start_addr, uint8_t stride)
 {
-    uint32_t i, k;
     uint16_t msp_addr = start_addr;
     uint8_t MEM[8];
-    char str[100] = { 0 };
 
-    puts("");
-    print_console(emu, "\n");
+    emu_printf(emu, "\n");
 
-    for (i = 0; i < 32; i += 8) {
-        for (k = 0; k < 8; k++)
+    for (int i = 0; i < 32; i += 8) {
+        for (int k = 0; k < 8; k++)
             MEM[k] = emu->mem[(uint16_t)(msp_addr + k)];
 
-        sprintf(str, "0x%04X:\t", msp_addr);
-
-        printf("%s", str);
-        print_console(emu, str);
+        emu_printf(emu, "0x%04X:\t", msp_addr);
 
         if (stride == BYTE_STRIDE) {
-            sprintf(str,
-                    "0x%02X  0x%02X  0x%02X  0x%02X  "
-                    "0x%02X  0x%02X  0x%02X  0x%02X\n",
-                    MEM[0], MEM[1], MEM[2], MEM[3], MEM[4], MEM[5], MEM[6], MEM[7]);
-
-            printf("%s", str);
-            print_console(emu, str);
+            emu_printf(emu,
+                       "0x%02X  0x%02X  0x%02X  0x%02X  "
+                       "0x%02X  0x%02X  0x%02X  0x%02X\n",
+                       MEM[0], MEM[1], MEM[2], MEM[3], MEM[4], MEM[5], MEM[6], MEM[7]);
         } else if (stride == WORD_STRIDE) {
-            printf("0x%02X%02X  0x%02X%02X  0x%02X%02X  0x%02X%02X\n", MEM[0], MEM[1], MEM[2],
-                   MEM[3], MEM[4], MEM[5], MEM[6], MEM[7]);
+            emu_printf(emu, "0x%02X%02X  0x%02X%02X  0x%02X%02X  0x%02X%02X\n", MEM[0], MEM[1],
+                       MEM[2], MEM[3], MEM[4], MEM[5], MEM[6], MEM[7]);
         } else if (stride == DWORD_STRIDE) {
-            printf("0x%02X%02X%02X%02X  0x%02X%02X%02X%02X\n", MEM[0], MEM[1], MEM[2], MEM[3],
-                   MEM[4], MEM[5], MEM[6], MEM[7]);
+            emu_printf(emu, "0x%02X%02X%02X%02X  0x%02X%02X%02X%02X\n", MEM[0], MEM[1], MEM[2],
+                       MEM[3], MEM[4], MEM[5], MEM[6], MEM[7]);
         }
 
         msp_addr += 8;
     }
 
-    puts("");
+    emu_printf(emu, "\n");
 }
 
 void setup_debugger(Emulator *emu)
 {
     Debugger *deb = emu->debugger;
 
-    deb->debug_mode       = true;
-    deb->disassemble_mode = false;
-    deb->quit             = false;
-
-    deb->console_interface = false;
-
+    deb->color = false;
     memset(deb->bp_addresses, 0, sizeof(deb->bp_addresses));
-    deb->num_bps    = 0;
-    deb->current_bp = 0;
+    deb->num_bps = 0;
 }
 
-void handle_breakpoints(Emulator *emu)
+int breakpoint_at(Emulator *emu, uint16_t addr)
 {
-    uint32_t i;
-    Cpu *cpu      = emu->cpu;
     Debugger *deb = emu->debugger;
-    char str[100] = { 0 };
 
-    for (i = 0; i < deb->num_bps; i++) {
-        if (cpu->pc == deb->bp_addresses[i]) {
-            cpu->running    = false;
-            deb->debug_mode = true;
-
-            sprintf(str, "\n\t[Breakpoint %d hit]\n\n", i + 1);
-            printf("%s", str);
-            print_console(emu, str);
-
-            display_registers(emu);
-            disassemble(emu, cpu->pc, 1);
-
-            return;
-        }
-    }
+    for (uint32_t i = 0; i < deb->num_bps; i++)
+        if (deb->bp_addresses[i] == addr)
+            return i;
+    return -1;
 }

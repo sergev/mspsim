@@ -1,6 +1,7 @@
 #ifndef _UART_H_
 #define _UART_H_
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #include "emulator.h"
@@ -31,6 +32,9 @@ void uart_reset(Emulator *emu);
 
 /* Called every CPU step; polls for input every UART_POLL_CYCLES. */
 void uart_tick(Emulator *emu);
+
+/* The RX interrupt is enabled and more input may come. */
+bool uart_may_interrupt(Emulator *emu);
 
 uint8_t uart_read(Emulator *emu, uint16_t addr);
 void uart_write(Emulator *emu, uint16_t addr, uint8_t val);

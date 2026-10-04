@@ -28,7 +28,7 @@
 
 void reg_num_to_name(uint8_t source_reg, char *reg_name);
 int8_t reg_name_to_num(char *name);
-int load_firmware(Emulator *emu, char *file_name, uint16_t virt_addr);
+long load_binary(Emulator *emu, const char *file_name, uint16_t addr);
 void display_help(Emulator *emu);
 
 /* Bounded append; truncates instead of overflowing. */

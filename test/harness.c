@@ -32,7 +32,7 @@ int uart_rx(Emulator *emu)
 {
     (void)emu;
     if (uart_input == NULL || *uart_input == 0)
-        return -1;
+        return UART_EOF;
     return (unsigned char)*uart_input++;
 }
 

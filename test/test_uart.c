@@ -93,11 +93,9 @@ TEST(stop_word)
 {
     Emulator *emu = emu_new();
 
-    emu->cpu->running = true;
     PROGRAM(0xC000, 0x40B2, 0x012A, 0x01FE); /* mov #0x12a, &0x01fe */
     step(emu, 1);
-    CHECK(emu->stopped);
-    CHECK(!emu->cpu->running);
+    CHECK_EQ(emu->stop, EMU_PROGRAM);
     CHECK_EQ(emu->exit_code, 0x012A);
 }
 
@@ -107,7 +105,7 @@ TEST(stop_byte)
 
     PROGRAM(0xC000, 0x40F2, 0x0007, 0x01FE); /* mov.b #7, &0x01fe */
     step(emu, 1);
-    CHECK(emu->stopped);
+    CHECK_EQ(emu->stop, EMU_PROGRAM);
     CHECK_EQ(emu->exit_code, 7);
 }
 
@@ -117,7 +115,7 @@ TEST(reset_clears_stop)
 
     mem_write(emu, 0x01FE, 3, 2);
     emu_reset(emu);
-    CHECK(!emu->stopped);
+    CHECK_EQ(emu->stop, EMU_RUNNING);
     CHECK_EQ(emu->exit_code, 0);
 }
 
@@ -136,10 +134,10 @@ TEST(hello)
             0x4382, 0x01FE);                         /* done: mov #0, &0x01fe */
     PROGRAM(0xC100, 0x6548, 0x6C6C, 0x0A6F, 0x0000); /* "Hello\n" */
 
-    for (int n = 0; n < 1000 && !emu->stopped; n++)
+    for (int n = 0; n < 1000 && emu->stop == EMU_RUNNING; n++)
         step(emu, 1);
     CHECK(strcmp(uart_output, "Hello\n") == 0);
-    CHECK(emu->stopped);
+    CHECK_EQ(emu->stop, EMU_PROGRAM);
     CHECK_EQ(emu->exit_code, 0);
 }
 
