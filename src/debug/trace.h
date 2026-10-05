@@ -42,4 +42,8 @@ void trace_end(Emulator *emu);
 /* After interrupt entry through vector irq; PC changes are shown too. */
 void trace_interrupt(Emulator *emu, int irq);
 
+/* After a host I/O call (hostio/hostio.h) described by text, since the last
+ * trace_snapshot(); PC changes are shown too. */
+void trace_host(Emulator *emu, const char *text);
+
 #endif

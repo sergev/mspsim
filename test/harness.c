@@ -12,6 +12,8 @@ int test_failed;
 char console_text[4096];
 char uart_output[4096];
 const char *uart_input;
+char host_stdout[4096];
+char host_stderr[4096];
 
 static Emulator *current;
 
@@ -35,6 +37,33 @@ int uart_rx(Emulator *emu)
     if (uart_input == NULL || *uart_input == 0)
         return UART_EOF;
     return (unsigned char)*uart_input++;
+}
+
+int host_write(Emulator *emu, int fd, const uint8_t *buf, int n)
+{
+    char *out  = fd == 2 ? host_stderr : host_stdout;
+    size_t len = strlen(out);
+
+    (void)emu;
+    if (len + n >= sizeof host_stdout)
+        n = sizeof host_stdout - 1 - len;
+    memcpy(out + len, buf, n);
+    out[len + n] = 0;
+    return n;
+}
+
+/* stdin is uart_input, shared with the UART. */
+int host_read(Emulator *emu, uint8_t *buf, int n)
+{
+    int got = 0;
+
+    (void)emu;
+    while (got < n && uart_input != NULL && *uart_input != 0) {
+        buf[got++] = *uart_input++;
+        if (buf[got - 1] == '\n') /* a line at a time, as from a terminal */
+            break;
+    }
+    return got;
 }
 
 void assemble(Emulator *emu, const char *source)
@@ -116,6 +145,8 @@ int run_tests(const Test *tests, size_t n, int argc, char **argv)
         console_text[0] = 0;
         uart_output[0]  = 0;
         uart_input      = NULL;
+        host_stdout[0]  = 0;
+        host_stderr[0]  = 0;
         tests[i].fn();
         emu_free();
         printf("%s %s\n", test_failed ? "FAIL" : "ok  ", tests[i].name);

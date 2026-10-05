@@ -8,6 +8,7 @@
 #include "cpu/registers.h"
 #include "debug/debugger.h"
 #include "debug/trace.h"
+#include "hostio/hostio.h"
 #include "loader/symbols.h"
 #include "uart/uart.h"
 
@@ -32,6 +33,7 @@ void emu_reset(Emulator *emu)
 {
     cpu_reset(emu);
     uart_reset(emu);
+    hostio_reset(emu);
     emu->stop      = EMU_RUNNING;
     emu->exit_code = 0;
 }

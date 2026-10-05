@@ -36,6 +36,10 @@ void uart_tick(Emulator *emu);
 /* The RX interrupt is enabled and more input may come. */
 bool uart_may_interrupt(Emulator *emu);
 
+/* Take the input byte waiting in RXBUF, if any, as a read of RXBUF would;
+ * -1 if there is none. Host reads of stdin (hostio) come after it. */
+int uart_take_input(Emulator *emu);
+
 uint8_t uart_read(Emulator *emu, uint16_t addr);
 void uart_write(Emulator *emu, uint16_t addr, uint8_t val);
 

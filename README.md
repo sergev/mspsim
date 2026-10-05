@@ -5,6 +5,7 @@ A command-line simulator of the classic MSP430 CPU (16-bit, 64 KB address space;
 - all 27 instructions and seven addressing modes, with cycle counts from the MSP430x2xx family user's guide (SLAU144);
 - a console UART at the MSP430G2xx USCI_A0 addresses, so programs print to stdout and read stdin;
 - a stop register that ends the run with an exit status, for test programs;
+- newlib's host I/O, so a program built with `msp430-elf-gcc -msim` uses `printf`, `fgets` and `exit` unchanged;
 - an execution trace of instructions, register changes, and memory loads and stores;
 - an interactive debugger with breakpoints, disassembly with symbols, and line editing.
 
@@ -57,6 +58,8 @@ The run ends when the program writes to the stop register, executes an illegal i
 | Status | Meaning |
 |---|---|
 | value written to 0x01FE (low 8 bits) | the program stopped itself |
+| value passed to `exit()` (low 8 bits) | a newlib program exited |
+| 128 + signal | a newlib program called `kill()`, as `abort()` does (134) |
 | 124 | cycle limit reached |
 | 125 | CPU off with no wake-up source |
 | 130 | interrupted with Ctrl-C |
@@ -95,6 +98,22 @@ int main(void)
     SIM_STOP = 0;
 }
 ```
+
+## newlib programs
+
+`msp430-elf-gcc -msim` links newlib's simulator support (libgloss `libsim.a`) and the linker script `msp430-sim.ld`. That support does its I/O in two ways, and mspsim serves both, so such a program needs no UART code of its own:
+
+```bash
+msp430-elf-gcc -mcpu=msp430 -msim -O2 prog.c -o prog.elf
+mspsim prog.elf < input.txt
+```
+
+- **TI's CIO breakpoint.** `write()` fills the buffer `__CIOBUF__` and calls `C$$IO$$`, a `nop; ret` where a debugger is meant to stop. When the ELF has both symbols, mspsim serves the request as PC reaches `C$$IO$$`, then runs the hook as usual. The buffer has TI's layout. A request is the data length (2 bytes), the command, eight parameter bytes and the data; a response is the data length, eight parameter bytes (the result first) and the data.
+- **Syscalls at 0x0180 + N.** `exit`, `open`, `close`, `read`, `lseek`, `kill` and `fstat` are symbols at 0x0180 plus their libgloss syscall number. When PC reaches 0x0180–0x01BF, mspsim performs the call with the arguments in R12–R14, puts the result in R12 and returns as `ret` would. A real chip resets on a fetch from there, so no working program executes there otherwise. A `call` and a tail-call `br` both work.
+
+Only the console is served. Writes to fds 1 and 2 go to stdout and stderr, and reads from fd 0 come from stdin. On a terminal, reads are in line mode with echo. A byte the UART has already taken from stdin comes first. `exit()` ends the run with its status, and `kill()` with 128 plus the signal. `close` of fds 0–2 succeeds. Opening, seeking, `fstat`, unlinking and the other CIO commands fail with -1, so newlib treats the console as a terminal it cannot `fstat`.
+
+The trace (`-t`) shows each call, as in `*** CIO write(1, 36) = 36` or `*** syscall read(0x0000, 0xfee2, 0x0400) = 11`.
 
 ## Tracing
 
@@ -145,7 +164,7 @@ ADDR is an ELF symbol name or a hex address, so `break main` works.
 - **Unit tests:** `test/test_*.c`.
 - **openMSP430 instruction tests:** the tests of the [openMSP430](https://opencores.org/projects/openmsp430) project in `test/openmsp430/`, assembled by a small test assembler (`test/asm.c`).
 - **Command-line tests:** `test/cli_test.sh`.
-- **Firmware tests:** when `msp430-elf-gcc` is installed, the C programs in `test/firmware/` are compiled and run as well. Set `MSP430_FLAGS` (default `-mmcu=msp430g2553 -Os`) if the compiler needs `-I`/`-L` for TI's device support files.
+- **Firmware tests:** when `msp430-elf-gcc` is installed, the C programs in `test/firmware/` are compiled and run as well, with `MSP430_FLAGS` (default `-mcpu=msp430 -msim -Os`). A `NAME.input` file, if present, is the program's stdin.
 
 ## Source layout
 
@@ -156,6 +175,7 @@ ADDR is an ELF symbol name or a hex address, so `break main` works.
 | `src/cpu/` | Decoder, instruction formats, flags, interrupts, cycle counts |
 | `src/mem/` | Memory bus, device dispatch, stop register |
 | `src/uart/` | Console UART |
+| `src/hostio/` | newlib's host I/O: the CIO breakpoint and the syscalls at 0x0180 |
 | `src/loader/` | ELF, Intel HEX and raw loaders; symbol table |
 | `src/debug/` | Debugger commands, disassembler, register display, trace |
 | `src/linenoise/` | Line editor (vendored) |

@@ -46,6 +46,8 @@ static bool stdin_eof;
 static struct termios saved_tty;
 static bool tty_raw, tty_atexit;
 
+static void tty_make_raw(void);
+
 void print_console(Emulator *e, const char *buf)
 {
     (void)e;
@@ -71,7 +73,10 @@ int uart_rx(Emulator *e)
         return UART_EOF;
     if (poll(&pfd, 1, 0) <= 0)
         return -1;
-    if (read(STDIN_FILENO, &c, 1) != 1) {
+    ssize_t got = read(STDIN_FILENO, &c, 1);
+    if (got < 0 && errno == EINTR)
+        return -1;
+    if (got != 1) {
         stdin_eof = true;
         return UART_EOF;
     }
@@ -81,6 +86,38 @@ int uart_rx(Emulator *e)
         return -1;
     }
     return c;
+}
+
+int host_write(Emulator *e, int fd, const uint8_t *buf, int n)
+{
+    FILE *f = fd == 2 ? stderr : stdout;
+
+    (void)e;
+    n = fwrite(buf, 1, n, f);
+    fflush(f);
+    return n;
+}
+
+/* A newlib read() expects lines, so a raw terminal is cooked for its duration. */
+int host_read(Emulator *e, uint8_t *buf, int n)
+{
+    bool raw = tty_raw;
+    ssize_t got;
+
+    if (stdin_eof)
+        return 0;
+    if (raw)
+        tcsetattr(STDIN_FILENO, TCSANOW, &saved_tty);
+    do
+        got = read(STDIN_FILENO, buf, n);
+    while (got < 0 && errno == EINTR && !e->break_request);
+    if (raw)
+        tty_make_raw();
+    if (got <= 0) {
+        stdin_eof = (got == 0);
+        return got == 0 ? 0 : -1;
+    }
+    return got;
 }
 
 static void handle_sigint(int sig)
@@ -296,7 +333,10 @@ int main(int argc, char *argv[])
         emu_printf(emu, "Loaded %s: %ld bytes, %d symbols, start at 0x%04x\n", path, size,
                    emu->nsymbols, emu->cpu->pc);
 
-    signal(SIGINT, handle_sigint);
+    /* No SA_RESTART: Ctrl-C must also end a read of stdin by the program. */
+    struct sigaction sa = { .sa_handler = handle_sigint };
+    sigemptyset(&sa.sa_mask);
+    sigaction(SIGINT, &sa, NULL);
 
     if (debug) {
         status = debug_loop(false);

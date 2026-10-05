@@ -25,6 +25,7 @@
 #include "cpu/decoder.h"
 #include "cpu/interrupts.h"
 #include "debug/trace.h"
+#include "hostio/hostio.h"
 #include "uart/uart.h"
 
 void reg_write(Cpu *cpu, unsigned reg, uint16_t val, bool byte)
@@ -44,9 +45,13 @@ void cpu_step(Emulator *emu)
     int irq;
 
     uart_tick(emu);
-    if (!(cpu->sr & SR_CPUOFF)) {
+    if (!(cpu->sr & SR_CPUOFF) && hostio_is_syscall(cpu->pc)) {
+        cpu->cycles += hostio_syscall(emu);
+    } else if (!(cpu->sr & SR_CPUOFF)) {
         uint16_t pc = cpu->pc;
 
+        if (pc == emu->cio_hook)
+            hostio_cio(emu);
         if (emu->trace)
             trace_begin(emu);
         unsigned cycles = decode(emu, fetch(emu), NULL);

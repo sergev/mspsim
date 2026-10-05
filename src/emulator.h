@@ -38,6 +38,9 @@ typedef struct Emulator {
     uint64_t uart_poll_at; /* cycle of the next console input poll */
     bool uart_eof;         /* console input is exhausted */
 
+    int cio_hook; /* address of C$$IO$$, or -1; see hostio/hostio.h */
+    int cio_buf;  /* address of __CIOBUF__, or -1 */
+
     bool trace;       /* tracing enabled; see debugger/trace.h */
     FILE *trace_file; /* trace output; NULL means stderr */
     Trace *tracer;

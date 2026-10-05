@@ -24,16 +24,16 @@ make test                               # all tests (ctest), including test/cli_
   - `harness.h` provides `TEST()`, `CHECK`/`CHECK_EQ`/`CHECK_STR`, `emu_new()`, `PROGRAM(addr, words...)` for hand-encoded instructions, `assemble(emu, source)` for assembly text, `poke`/`peek`, `step`, and `trace_start()`/`trace_text()` to capture a trace.
   - `test/asm.c` is a small two-pass assembler for tests (gas-like syntax, constant generators chosen as gas does, `1f`/`1b` labels, `.set`/`.word`/`.byte`/`.section .vectors`, emulated instructions). Code goes at 0xC000, data at 0x0200.
   - `test/openmsp430/` holds the openMSP430 instruction tests (LGPL): `.s43` sources run with checkpoint files `.chk` (`test_openmsp430.c`). `test/binutils/add.s` is from the gdb simulator suite. See the READMEs there.
-  - `test/firmware/` holds C programs that run only when `msp430-elf-gcc` is found (`MSP430_FLAGS` sets the compiler flags).
+  - `test/firmware/` holds C programs that run only when `msp430-elf-gcc` is found (`MSP430_FLAGS` sets the compiler flags; default `-mcpu=msp430 -msim -Os`, which needs no TI support files). `NAME.input` is a program's stdin; `newlib.c` uses newlib's stdio through the host I/O.
   - `emu_new()` wraps `emu_create()`; `poke`/`peek` go through the memory bus.
-  - It also defines the front-end hooks: `print_console` captures into `console_text`, `uart_tx` into `uart_output`, and `uart_rx` reads from `uart_input` (set it before stepping).
+  - It also defines the front-end hooks: `print_console` captures into `console_text`, `uart_tx` into `uart_output`, `uart_rx` reads from `uart_input` (set it before stepping), `host_write` captures fds 1 and 2 into `host_stdout`/`host_stderr`, and `host_read` reads `uart_input` a line at a time.
   - Each file's `main()` lists its cases with `T(name)`.
   - `test/cli_test.sh` runs the `mspsim` binary on hand-assembled images and checks stdout and exit statuses (ctest `cli`).
 - `src/linenoise/` is vendored unmodified (BSD-2-Clause); `make format` and `header_check` skip it.
 
 ## Source layout
 
-`src/` holds the core library `msp430core` (`emulator.c`, `io.c`, `utilities.c`, `cpu/`, `mem/`, `uart/`, `loader/`, `debug/`), the front-end `main.c`, and the vendored line editor `linenoise/`; `test/` holds the tests.
+`src/` holds the core library `msp430core` (`emulator.c`, `io.c`, `utilities.c`, `cpu/`, `mem/`, `uart/`, `hostio/`, `loader/`, `debug/`), the front-end `main.c`, and the vendored line editor `linenoise/`; `test/` holds the tests.
 
 ## Firmware format
 
@@ -44,7 +44,7 @@ make test                               # all tests (ctest), including test/cli_
 
 ## Architecture
 
-**Front-end hooks:** `src/io.h` declares functions the front-end (`src/main.c`) implements: `print_console` for diagnostic and debugger text, and `uart_tx`/`uart_rx` for the console UART (`uart_rx` returns -1 when no byte is ready and `UART_EOF` at end of input). The core never calls `printf`; it prints with `emu_printf()` (`io.c`), which goes through `print_console`.
+**Front-end hooks:** `src/io.h` declares functions the front-end (`src/main.c`) implements: `print_console` for diagnostic and debugger text, `uart_tx`/`uart_rx` for the console UART (`uart_rx` returns -1 when no byte is ready and `UART_EOF` at end of input), and `host_write`/`host_read` for newlib's host I/O (`host_read` waits for input; on a terminal it reads in cooked mode). The core never calls `printf`; it prints with `emu_printf()` (`io.c`), which goes through `print_console`.
 
 **Front-end:** `src/main.c` parses options with `getopt_long`, then runs in batch mode, or in the interactive debugger with `-g` (a linenoise prompt; an empty line repeats the last command). UART output goes to stdout. Other text goes to stderr in batch mode (`-q` drops it) and to stdout at the debugger prompt. During a run, a tty stdin is raw; Ctrl-] or SIGINT set `emu->break_request`. Ctrl-] enters the debugger; in batch mode SIGINT exits with 130. Exit statuses: the stop-register value, 124 cycle limit, 125 asleep with no wake-up, 130 interrupted, 132 illegal instruction, 1 load error, 2 usage.
 
@@ -53,6 +53,8 @@ make test                               # all tests (ctest), including test/cli_
 **Memory:** the 64 KB address space is `emu->mem`, all plain RAM. The CPU touches it only through the bus in `mem/memory.h`: `mem_read(emu, addr, size, kind)` and `mem_write(emu, addr, val, size)`, where size is 1 or 2 bytes, word accesses ignore address bit 0, and `kind` is `ACC_FETCH` (opcode and extension words, via `fetch()`) or `ACC_DATA`. The debugger and the loader may use `emu->mem` directly.
 
 **Devices:** data accesses below 0x0200 go through `io_read`/`io_write` in `mem/memory.c`, which dispatch to the device handlers. The only device is the console UART (`uart/uart.c`), a USCI_A0 subset: `IE2` 0x0001 (RXIE), `IFG2` 0x0003 (TXIFG always 1, RXIFG = byte waiting), `UCA0RXBUF` 0x0066 and `UCA0TXBUF` 0x0067; its RX interrupt is vector 7 (0xFFEE). Device state is mirrored in `emu->mem`, so `dump` shows it. Input is polled every `UART_POLL_CYCLES` from `cpu_step()` and on each `IFG2` read. A write to 0x01FE sets `emu->stop = EMU_PROGRAM` and `emu->exit_code`. `emu_reset()` resets the CPU, the UART and the stop state.
+
+**Host I/O** (`src/hostio/`): newlib's simulator support (`msp430-elf-gcc -msim`, libgloss `libsim.a`). `hostio_reset()`, called by `emu_reset()`, looks up `C$$IO$$` and `__CIOBUF__` (or `_CIOBUF_`) into `emu->cio_hook`/`emu->cio_buf`, so symbols must be loaded before the reset. At the start of `cpu_step()`, PC in 0x0180–0x01BF performs syscall PC − 0x0180 and returns as `ret` (3 cycles) instead of executing; PC at `cio_hook` serves the CIO request in the buffer and then executes the hook. Only the console is served: the front-end hooks `host_write` (fds 1, 2) and `host_read` (fd 0), declared in `io.h`. A console read first takes a byte waiting in `UCA0RXBUF` (`uart_take_input()`), because the UART polls the same stdin. `exit` and `kill` stop the run like the stop register (`kill` with 128 + signal). The front-end installs SIGINT without `SA_RESTART`, so Ctrl-C also ends a blocking read.
 
 **Registers:** `cpu->r[16]` is aliased by `pc`, `sp`, `sr`, `cg2`, `r4`…`r15`. SR is a plain `uint16_t` with `SR_C`, `SR_Z`, `SR_N`, `SR_GIE`, `SR_CPUOFF`, … masks; use `set_flag()`. Register-mode writes go through `reg_write()`: byte writes clear the high byte, and R3 discards writes.
 

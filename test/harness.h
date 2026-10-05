@@ -87,4 +87,9 @@ extern char console_text[4096];
 extern char uart_output[4096];
 extern const char *uart_input;
 
+/* What the program wrote to fds 1 and 2 through the host I/O calls; it reads
+ * uart_input as its stdin. */
+extern char host_stdout[4096];
+extern char host_stderr[4096];
+
 #endif

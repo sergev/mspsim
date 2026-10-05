@@ -22,6 +22,7 @@ add_library(msp430core STATIC
     src/cpu/formatII.c
     src/cpu/formatIII.c
     src/cpu/interrupts.c
+    src/hostio/hostio.c
     src/loader/loader.c
     src/loader/symbols.c
     src/mem/memory.c

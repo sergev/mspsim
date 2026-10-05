@@ -99,3 +99,9 @@ void trace_interrupt(Emulator *emu, int irq)
     fprintf(trace_out(emu), "*** interrupt vector 0x%04x\n", VECTOR_TABLE + 2 * irq);
     print_effects(emu, true);
 }
+
+void trace_host(Emulator *emu, const char *text)
+{
+    fprintf(trace_out(emu), "*** %s\n", text);
+    print_effects(emu, true);
+}

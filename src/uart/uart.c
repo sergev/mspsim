@@ -50,6 +50,13 @@ void uart_tick(Emulator *emu)
     poll_input(emu);
 }
 
+int uart_take_input(Emulator *emu)
+{
+    if (!(emu->mem[IFG2] & UCA0RXIFG))
+        return -1;
+    return uart_read(emu, UCA0RXBUF);
+}
+
 uint8_t uart_read(Emulator *emu, uint16_t addr)
 {
     switch (addr) {
